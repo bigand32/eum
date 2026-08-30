@@ -31,6 +31,57 @@ function isPermissionError(error: unknown) {
   return error.name === "NotAllowedError" || error.name === "PermissionDeniedError";
 }
 
+function isMicNotSupported() {
+  return typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia;
+}
+
+function isRecorderNotSupported() {
+  return typeof MediaRecorder === "undefined";
+}
+
+async function requestMicStream(timeoutMs = 12_000): Promise<MediaStream> {
+  if (isMicNotSupported()) {
+    throw new Error("NOT_SUPPORTED");
+  }
+
+  return Promise.race([
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false }),
+    new Promise<MediaStream>((_, reject) => {
+      window.setTimeout(() => reject(new Error("MIC_TIMEOUT")), timeoutMs);
+    }),
+  ]);
+}
+
+function createMediaRecorder(stream: MediaStream): MediaRecorder {
+  const mimeType = getRecorderMimeType();
+  if (mimeType) {
+    try {
+      return new MediaRecorder(stream, { mimeType });
+    } catch {
+      // Safari/iOS fallback
+    }
+  }
+  return new MediaRecorder(stream);
+}
+
+function micErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    if (error.message === "NOT_SUPPORTED") {
+      return "이 브라우저에서는 녹음을 지원하지 않아요. Safari로 열어 주세요.";
+    }
+    if (error.message === "MIC_TIMEOUT") {
+      return "마이크 연결이 지연되고 있어요. 권한 팝업을 확인하거나 Safari를 새로고침해 주세요.";
+    }
+    if (error.message === "RECORD_NOT_SUPPORTED") {
+      return "이 기기에서는 녹음 형식을 지원하지 않아요.";
+    }
+  }
+  if (isPermissionError(error)) {
+    return "마이크 권한이 필요해요. 설정 → Safari → 마이크에서 허용해 주세요.";
+  }
+  return "마이크를 사용할 수 없어요. Safari를 새로고침하거나 이어폰을 연결해 보세요.";
+}
+
 export function RecordModal() {
   const studentId = useStudentId();
   const { session } = useSession();
@@ -41,9 +92,11 @@ export function RecordModal() {
   const [isRecording, setIsRecording] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [micLoading, setMicLoading] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [playbackPlaying, setPlaybackPlaying] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -55,7 +108,24 @@ export function RecordModal() {
   const recorderMimeRef = useRef("");
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartedAtRef = useRef<number | null>(null);
+  const recordedDurationRef = useRef(0);
   const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const syncElapsed = useCallback(() => {
+    if (recordingStartedAtRef.current === null) return 0;
+    const sec = Math.floor((Date.now() - recordingStartedAtRef.current) / 1000);
+    setElapsedSec(sec);
+    recordedDurationRef.current = sec;
+    return sec;
+  }, []);
 
   const stopMic = useCallback(() => {
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -108,10 +178,10 @@ export function RecordModal() {
   const ensureMic = useCallback(async () => {
     if (micStreamRef.current) return micStreamRef.current;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await requestMicStream();
     micStreamRef.current = stream;
 
-    if (isMonitorOn) {
+    if (isMonitorOn && !isIOSDevice()) {
       const ctx = new AudioContext();
       if (ctx.state === "suspended") {
         await ctx.resume();
@@ -125,58 +195,129 @@ export function RecordModal() {
   }, [isMonitorOn, setupMonitorGraph]);
 
   const openModal = () => {
+    if (isRecorderNotSupported()) {
+      alert("이 브라우저에서는 녹음을 지원하지 않아요. iPhone 기본 Safari로 열어 주세요.");
+      return;
+    }
     setOpen(true);
     setRecordedBlob(null);
     setElapsedSec(0);
+    recordedDurationRef.current = 0;
+    recordingStartedAtRef.current = null;
     setMicReady(false);
-  };
-
-  const closeModal = () => {
-    if (isRecording) stopRecording();
-    playbackAudioRef.current?.pause();
-    stopMic();
-    setMicLoading(false);
-    setOpen(false);
+    setMicError(null);
   };
 
   const startRecording = () => {
-    if (!micStreamRef.current) return;
+    if (!micStreamRef.current) {
+      throw new Error("MIC_NOT_READY");
+    }
+
+    playbackAudioRef.current?.pause();
+    setPlaybackPlaying(false);
+    setRecordedBlob(null);
+    setMicError(null);
     chunksRef.current = [];
-    const mimeType = getRecorderMimeType();
-    recorderMimeRef.current = mimeType;
-    const recorder = mimeType
-      ? new MediaRecorder(micStreamRef.current, { mimeType })
-      : new MediaRecorder(micStreamRef.current);
+
+    let recorder: MediaRecorder;
+    try {
+      recorder = createMediaRecorder(micStreamRef.current);
+    } catch {
+      throw new Error("RECORD_NOT_SUPPORTED");
+    }
+
+    recorderMimeRef.current = recorder.mimeType || getRecorderMimeType();
     recorder.ondataavailable = (e) => {
-      if (e.data.size) chunksRef.current.push(e.data);
+      if (e.data.size > 0) chunksRef.current.push(e.data);
     };
-    recorder.onstop = () => {
-      const blobType = recorderMimeRef.current || recorder.mimeType || "audio/mp4";
-      setRecordedBlob(new Blob(chunksRef.current, { type: blobType }));
-    };
-    recorder.start();
+
+    recorder.start(isIOSDevice() ? undefined : 250);
     mediaRecorderRef.current = recorder;
     setIsRecording(true);
-    setElapsedSec(0);
-    timerRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    recordingStartedAtRef.current = Date.now();
+    recordedDurationRef.current = 0;
+    syncElapsed();
+    timerRef.current = setInterval(syncElapsed, 250);
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current?.state !== "inactive") {
-      mediaRecorderRef.current?.stop();
-    }
+  const finalizeRecording = useCallback(async () => {
+    syncElapsed();
+    recordingStartedAtRef.current = null;
+    clearTimer();
     setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
+
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+
+    setIsFinalizing(true);
+    setMicError(null);
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        const blobType = recorderMimeRef.current || recorder.mimeType || "audio/mp4";
+        const blob = new Blob(chunksRef.current, { type: blobType });
+        if (blob.size > 0) {
+          setRecordedBlob(blob);
+        } else {
+          setRecordedBlob(null);
+          setMicError("녹음 파일을 만들지 못했어요. 1초 이상 녹음한 뒤 다시 시도해 주세요.");
+        }
+        mediaRecorderRef.current = null;
+        resolve();
+      };
+
+      recorder.onstop = finish;
+      recorder.onerror = () => {
+        setMicError("녹음을 저장하지 못했어요. 다시 시도해 주세요.");
+        finish();
+      };
+
+      try {
+        if (recorder.state === "recording") {
+          recorder.requestData();
+        }
+      } catch {
+        // Safari/iOS may not support requestData — stop() still flushes on stop.
+      }
+
+      try {
+        recorder.stop();
+      } catch {
+        finish();
+        return;
+      }
+
+      window.setTimeout(finish, 2000);
+    });
+
+    setIsFinalizing(false);
+  }, [syncElapsed, clearTimer]);
+
+  const closeModal = () => {
+    if (isRecording) void finalizeRecording();
+    playbackAudioRef.current?.pause();
+    clearTimer();
+    recordingStartedAtRef.current = null;
+    stopMic();
+    setMicLoading(false);
+    setIsFinalizing(false);
+    setOpen(false);
   };
 
   const handleRecordTap = () => {
     void (async () => {
       if (isRecording) {
-        stopRecording();
+        await finalizeRecording();
         return;
       }
 
+      if (isFinalizing || micLoading) return;
+
       setMicLoading(true);
+      setMicError(null);
       try {
         await ensureMic();
         if (audioCtxRef.current?.state === "suspended") {
@@ -184,13 +325,11 @@ export function RecordModal() {
         }
         startRecording();
       } catch (error) {
-        if (isPermissionError(error)) {
-          alert(
-            "마이크 권한이 필요해요.\n\n설정 → Safari → 마이크에서 이 사이트를 허용해 주세요.",
-          );
-        } else {
-          alert("마이크를 사용할 수 없어요. Safari를 새로고침하거나 이어폰을 연결해 보세요.");
-        }
+        stopMic();
+        setMicReady(false);
+        const message = micErrorMessage(error);
+        setMicError(message);
+        alert(message);
       } finally {
         setMicLoading(false);
       }
@@ -313,6 +452,8 @@ export function RecordModal() {
                     <span className="rec-dot h-2 w-2 rounded-full bg-red-500" />
                     <span className="text-[13px] font-bold text-red-500">녹음 중</span>
                   </>
+                ) : isFinalizing ? (
+                  <span className="text-[13px] font-medium text-gray-400">녹음 파일 만드는 중...</span>
                 ) : (
                   <span className="text-[13px] font-medium text-gray-400">
                     {micLoading
@@ -341,7 +482,7 @@ export function RecordModal() {
               </div>
               <button
                 type="button"
-                disabled={micLoading}
+                disabled={micLoading || isFinalizing}
                 onClick={handleRecordTap}
                 className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl text-white shadow-[0_8px_24px_rgba(239,68,68,0.35)] disabled:opacity-60 ${
                   isRecording ? "bg-gray-900" : "bg-red-500 hover:bg-red-600"
@@ -349,12 +490,17 @@ export function RecordModal() {
               >
                 <i className={`fa-solid ${isRecording ? "fa-stop" : "fa-microphone"}`} />
               </button>
-              <p className="mt-3 text-[12px] text-gray-400">
+              <p className="mt-3 text-center text-[12px] text-gray-400">
                 {isRecording ? "탭하여 녹음 중지" : "탭하여 녹음 시작"}
               </p>
+              {micError && (
+                <p className="mt-2 px-2 text-center text-[12px] font-medium text-red-500">
+                  {micError}
+                </p>
+              )}
             </div>
 
-            {recordedBlob && (
+            {recordedBlob && recordedBlob.size > 0 && (
               <div>
                 <div className="mb-3 flex items-center gap-3 rounded-[16px] bg-surface p-4">
                   <button
@@ -392,12 +538,13 @@ export function RecordModal() {
                       setSaving(true);
                       try {
                         const userId = session?.id ?? studentId;
-                        const mediaUrl = await uploadPracticeBlob(userId, recordedBlob, elapsedSec);
+                        const durationSec = Math.max(recordedDurationRef.current, elapsedSec, 1);
+                        const mediaUrl = await uploadPracticeBlob(userId, recordedBlob, durationSec);
                         const today = new Date();
                         await savePracticeRecord({
                           studentId,
                           title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
-                          durationSec: elapsedSec,
+                          durationSec,
                           mediaUrl,
                         });
                         markAttendanceToday();
