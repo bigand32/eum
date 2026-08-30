@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { AuthUser } from "@/lib/auth/session";
-import { getSession, setSession } from "@/lib/auth/session";
+import { getSession, setSession, clearSession } from "@/lib/auth/session";
 import { getCurrentAuthUser } from "@/lib/auth/supabase-auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/client";
@@ -22,13 +22,28 @@ export function useSession() {
     };
 
     const refreshSupabase = async () => {
-      const user = await getCurrentAuthUser();
+      const supabase = createClient();
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession();
+
       if (cancelled) return;
-      if (user) {
+
+      if (!authSession?.user) {
+        clearSession();
+        setSessionState(null);
+        setLoading(false);
+        return;
+      }
+
+      const user = (await getCurrentAuthUser()) ?? getSession();
+      if (cancelled) return;
+
+      if (user && user.id === authSession.user.id) {
         setSession(user);
         setSessionState(user);
       } else {
-        setSessionState(null);
+        setSessionState(getSession());
       }
       setLoading(false);
     };
@@ -40,14 +55,21 @@ export function useSession() {
 
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange(async () => {
-        const user = await getCurrentAuthUser();
+      } = supabase.auth.onAuthStateChange(async (event, authSession) => {
         if (cancelled) return;
-        if (user) {
+
+        if (event === "SIGNED_OUT" || !authSession?.user) {
+          clearSession();
+          setSessionState(null);
+          return;
+        }
+
+        const user = (await getCurrentAuthUser()) ?? getSession();
+        if (cancelled) return;
+
+        if (user && user.id === authSession.user.id) {
           setSession(user);
           setSessionState(user);
-        } else {
-          setSessionState(null);
         }
       });
 

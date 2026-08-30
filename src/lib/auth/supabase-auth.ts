@@ -1,6 +1,8 @@
 import type { AuthUser, UserRole } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/client";
 import type { DbMaster, DbProfile, DbStudent } from "@/lib/supabase/mappers";
+import type { User } from "@supabase/supabase-js";
 
 type ProfileWithRelations = DbProfile & {
   students: DbStudent[] | DbStudent | null;
@@ -10,6 +12,23 @@ type ProfileWithRelations = DbProfile & {
 function firstRelation<T>(value: T[] | T | null): T | null {
   if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function buildAuthUserFromAuthRecord(user: User, profile: AuthUser | null): AuthUser {
+  if (profile) return profile;
+
+  const cached = typeof window !== "undefined" ? getSession() : null;
+  if (cached?.id === user.id) return cached;
+
+  return {
+    id: user.id,
+    name: String(user.user_metadata?.name ?? cached?.name ?? ""),
+    email: user.email ?? cached?.email ?? "",
+    phone: cached?.phone ?? "",
+    role: (user.user_metadata?.role as UserRole) ?? cached?.role ?? "student",
+    studentId: cached?.studentId,
+    masterId: cached?.masterId,
+  };
 }
 
 export async function fetchAuthUser(userId: string): Promise<AuthUser | null> {
@@ -52,14 +71,7 @@ export async function loginWithSupabase(
   const user = await fetchAuthUser(data.user.id);
   if (user) return user;
 
-  // 프로필 조회 실패 시에도 인증은 성공한 상태 — 최소 세션 정보 반환
-  return {
-    id: data.user.id,
-    name: String(data.user.user_metadata?.name ?? ""),
-    email: data.user.email ?? email.trim().toLowerCase(),
-    phone: "",
-    role: (data.user.user_metadata?.role as UserRole) ?? "student",
-  };
+  return buildAuthUserFromAuthRecord(data.user, null);
 }
 
 export async function logoutSupabase() {
@@ -308,8 +320,12 @@ export async function registerWithSupabase(input: {
 export async function getCurrentAuthUser(): Promise<AuthUser | null> {
   const supabase = createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  return fetchAuthUser(user.id);
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const authUser = session?.user;
+  if (!authUser) return null;
+
+  const profile = await fetchAuthUser(authUser.id);
+  return buildAuthUserFromAuthRecord(authUser, profile);
 }

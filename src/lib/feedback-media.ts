@@ -27,8 +27,9 @@ export async function uploadFeedbackMedia(userId: string, file: File): Promise<s
 }
 
 export async function uploadPracticeBlob(userId: string, blob: Blob, durationSec: number) {
-  const file = new File([blob], `practice-${durationSec}s.webm`, {
-    type: blob.type || "audio/webm",
+  const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("webm") ? "webm" : "m4a";
+  const file = new File([blob], `practice-${durationSec}s.${ext}`, {
+    type: blob.type || "audio/mp4",
   });
   return uploadFeedbackMedia(userId, file);
 }
