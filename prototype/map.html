@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 학원 지도</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <!-- 실제 지도 구현을 위한 Leaflet 라이브러리 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 200: '#bfdbfe', 400: '#60a5fa', 500: '#3182f6', 600: '#1b64da' },
+                        surface: '#f9fafb',
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
+                        'float': '0 8px 30px rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #f3f4f6; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        
+        /* 핀 애니메이션 효과 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .pin-active { animation: bounce 2s infinite ease-in-out; }
+
+        /* 지도 위 UI 요소들을 위한 z-index 정리 */
+        #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0; }
+        .leaflet-control-attribution { display: none; } /* 깔끔한 UI를 위해 워터마크 숨김 */
+        
+        /* 커스텀 마커 스타일링 초기화 */
+        .leaflet-div-icon { background: transparent; border: none; }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame">
+        
+        <!-- 지도 영역 -->
+        <div id="map"></div>
+
+        <!-- Floating Search & Header -->
+        <header class="absolute top-0 w-full z-20 px-4 pt-12 pb-4 bg-gradient-to-b from-white/90 via-white/50 to-transparent pointer-events-none">
+            <div class="flex items-center gap-3 pointer-events-auto">
+                <button class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-800 shadow-soft shrink-0 hover:text-brand-500 transition">
+                    <i class="fa-solid fa-chevron-left text-[15px]"></i>
+                </button>
+                <div class="flex-1 bg-white rounded-full h-12 flex items-center px-4 shadow-soft border border-gray-100/50">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 mr-2.5"></i>
+                    <input type="text" placeholder="강남구 역삼동" class="bg-transparent w-full outline-none text-[15px] font-medium text-gray-900 placeholder-gray-400" value="강남구 역삼동">
+                </div>
+            </div>
+            
+            <!-- 현 지도에서 검색 버튼 -->
+            <div class="flex justify-center mt-4 pointer-events-auto">
+                <button class="bg-white text-brand-500 text-[13px] font-bold px-4 py-2 rounded-full shadow-soft border border-gray-100 flex items-center gap-2 hover:bg-brand-50 transition active:scale-95">
+                    <i class="fa-solid fa-rotate-right text-[12px]"></i> 현 지도에서 검색
+                </button>
+            </div>
+        </header>
+
+        <!-- My Location Button -->
+        <button class="absolute bottom-[230px] right-4 w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-float text-gray-700 pointer-events-auto hover:text-brand-500 transition border border-gray-100 z-20" onclick="moveToCenter()">
+            <i class="fa-solid fa-crosshairs text-lg"></i>
+        </button>
+
+        <!-- Floating Bottom Card (Selected Academy Details) -->
+        <div id="academy-card" class="absolute bottom-20 left-0 w-full px-4 z-30 transition-transform duration-300 transform translate-y-0 opacity-100">
+            <!-- 내부 내용은 JS로 동적 교체됨 -->
+        </div>
+
+        <!-- Clean Bottom Navigation (홈 화면과 통일) -->
+        <nav class="absolute bottom-0 w-full bg-white/95 backdrop-blur-xl border-t border-gray-100 px-6 py-2 pb-8 z-40 flex justify-between pointer-events-auto">
+            <a href="home.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-house text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">홈</span>
+            </a>
+            <a href="search.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-magnifying-glass text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">탐색</span>
+            </a>
+            <a href="map.html" class="flex flex-col items-center gap-1.5 w-12 text-brand-500">
+                <i class="fa-solid fa-map-location-dot text-[20px]"></i>
+                <span class="text-[10px] font-bold tracking-wide">지도</span>
+            </a>
+            <a href="daliy.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors relative">
+                <i class="fa-solid fa-book-open text-[20px]"></i>
+                <span class="absolute top-0 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                <span class="text-[10px] font-semibold tracking-wide">일지</span>
+            </a>
+            <a href="mypage.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-user text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">마이</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <script>
+        // 중심 좌표 (강남역 부근)
+        const CENTER_LAT = 37.498095;
+        const CENTER_LNG = 127.027610;
+
+        // Leaflet 지도 초기화
+        const map = L.map('map', { 
+            zoomControl: false, // 기본 줌 컨트롤 숨김
+            tap: false // 모바일 더블탭 줌 이슈 방지
+        }).setView([CENTER_LAT, CENTER_LNG], 15);
+
+        // 아주 깔끔한 느낌의 밝은 지도 타일 적용 (CartoDB Positron - 핀테크/세련된 앱에서 주로 사용)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // 내 위치 버튼 클릭 시 중심으로 이동
+        function moveToCenter() {
+            map.flyTo([CENTER_LAT, CENTER_LNG], 15, { animate: true, duration: 0.5 });
+        }
+
+        // 학원 데이터 배열 (DB 연동 시 이 데이터를 API로 불러옴)
+        const academies = [
+            {
+                id: 1,
+                lat: 37.5005, lng: 127.027,
+                name: "한음 실용음악학원 강남점",
+                type: "AD",
+                rating: "4.9 (124)",
+                distance: "강남역 도보 3분",
+                tags: ["보컬입시", "미디/작곡", "2027 조기할인"],
+                img: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=600&auto=format&fit=crop",
+                isPartner: true,
+                selected: true // 처음 로드될 때 선택된 상태
+            },
+            {
+                id: 2,
+                lat: 37.496, lng: 127.029,
+                name: "보컬명가",
+                type: "NORMAL",
+                rating: "4.7 (89)",
+                distance: "역삼역 도보 5분",
+                tags: ["취미보컬", "원데이클래스"],
+                img: "https://images.unsplash.com/photo-1516280440502-613098522616?w=200&h=150&fit=crop",
+                isPartner: false,
+                selected: false
+            },
+            {
+                id: 3,
+                lat: 37.499, lng: 127.032,
+                name: "비트메이커",
+                type: "AD_SMALL",
+                rating: "4.8 (210)",
+                distance: "신논현역 도보 2분",
+                tags: ["랩메이킹", "비트메이킹"],
+                img: "https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=200&h=150&fit=crop",
+                isPartner: true,
+                selected: false
+            }
+        ];
+
+        let currentMarkers = [];
+        let activeAcademyId = 1;
+
+        // 하단 카드 렌더링 함수
+        function renderBottomCard(academy) {
+            const cardContainer = document.getElementById('academy-card');
+            
+            if (!academy) {
+                // 숨김 처리
+                cardContainer.style.transform = 'translateY(150%)';
+                cardContainer.style.opacity = '0';
+                return;
+            }
+
+            // 파트너 뱃지 HTML
+            const partnerBadge = academy.isPartner ? `<span class="text-brand-500 text-[10px] font-bold bg-brand-50 px-1.5 py-0.5 rounded mb-1 inline-block">공식 파트너</span>` : '';
+            
+            // 태그 HTML
+            const tagsHtml = academy.tags.map(tag => {
+                const isHighlight = tag.includes('할인');
+                return `<span class="text-[11px] font-bold ${isHighlight ? 'text-brand-500 bg-brand-50' : 'text-gray-600 bg-surface border border-gray-100'} px-2 py-1 rounded-md">${tag}</span>`;
+            }).join('');
+
+            cardContainer.innerHTML = `
+                <div class="bg-white rounded-[24px] p-4 shadow-float border border-gray-100 cursor-pointer hover:border-brand-200 transition active:scale-[0.98]" onclick="location.href='euduDetail.html'">
+                    <div class="flex gap-4">
+                        <div class="w-[84px] h-[84px] rounded-[16px] overflow-hidden shrink-0 relative">
+                            <img src="${academy.img}" class="w-full h-full object-cover">
+                            ${academy.type.includes('AD') ? `<div class="absolute top-1.5 left-1.5 bg-gray-900/80 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-sm">AD</div>` : ''}
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div class="flex justify-between items-start mb-1">
+                                <div>
+                                    ${partnerBadge}
+                                    <h3 class="text-[16px] font-bold text-gray-900 leading-tight">${academy.name}</h3>
+                                </div>
+                                <button class="text-gray-300 hover:text-red-500 transition p-1">
+                                    <i class="fa-regular fa-heart"></i>
+                                </button>
+                            </div>
+                            <p class="text-[12px] text-gray-500 font-medium mb-2 flex items-center gap-1">
+                                <i class="fa-solid fa-star text-yellow-400 text-[10px]"></i> ${academy.rating} · ${academy.distance}
+                            </p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${tagsHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 표시 처리
+            cardContainer.style.transform = 'translateY(0)';
+            cardContainer.style.opacity = '1';
+        }
+
+        // 마커 렌더링 함수
+        function renderMarkers() {
+            // 기존 마커 제거
+            currentMarkers.forEach(m => map.removeLayer(m));
+            currentMarkers = [];
+
+            academies.forEach(acad => {
+                const isSelected = acad.id === activeAcademyId;
+                let htmlContent = '';
+
+                if (isSelected) {
+                    // 선택된 마커 (크고 툴팁 있음)
+                    htmlContent = `
+                        <div class="relative flex flex-col items-center pin-active" style="margin-top: -40px; margin-left: -20px;">
+                            <div class="bg-gray-900 text-white text-[12px] font-bold px-3 py-1.5 rounded-lg shadow-md mb-1 whitespace-nowrap">
+                                ${acad.name}
+                                <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </div>
+                            <div class="w-10 h-10 bg-brand-500 border-[3px] border-white rounded-full flex items-center justify-center shadow-lg text-white">
+                                <i class="fa-solid fa-location-dot text-[16px]"></i>
+                            </div>
+                        </div>
+                    `;
+                } else if (acad.type === 'AD' || acad.type === 'AD_SMALL') {
+                    // 광고 마커
+                    htmlContent = `
+                        <div class="relative flex flex-col items-center group" style="margin-top: -16px; margin-left: -16px;">
+                            <div class="bg-white text-gray-800 text-[11px] font-bold px-2 py-1 rounded-lg shadow-sm border border-gray-200 mb-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition absolute bottom-full mb-1">${acad.name}</div>
+                            <div class="w-8 h-8 bg-white border-[2.5px] border-brand-200 rounded-full flex items-center justify-center shadow-md text-brand-400">
+                                <span class="text-[10px] font-bold">AD</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 일반 마커
+                    htmlContent = `
+                        <div class="relative flex flex-col items-center group" style="margin-top: -16px; margin-left: -16px;">
+                            <div class="bg-white text-gray-800 text-[11px] font-bold px-2 py-1 rounded-lg shadow-sm border border-gray-200 mb-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition absolute bottom-full mb-1">${acad.name}</div>
+                            <div class="w-8 h-8 bg-white border-[2.5px] border-gray-300 rounded-full flex items-center justify-center shadow-md text-gray-400">
+                                <i class="fa-solid fa-music text-[12px]"></i>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 커스텀 HTML 아이콘 생성
+                const customIcon = L.divIcon({
+                    html: htmlContent,
+                    className: '', // Tailwind 클래스를 직접 썼으므로 Leaflet 기본 클래스 무시
+                    iconSize: [0, 0] // CSS로 크기 조절
+                });
+
+                // 마커 추가
+                const marker = L.marker([acad.lat, acad.lng], { icon: customIcon }).addTo(map);
+                
+                // 클릭 이벤트
+                marker.on('click', () => {
+                    activeAcademyId = acad.id;
+                    renderMarkers(); // 마커 상태(색상, 애니메이션) 업데이트
+                    renderBottomCard(acad); // 하단 카드 업데이트
+                    map.flyTo([acad.lat, acad.lng], 15, { animate: true, duration: 0.3 }); // 클릭한 마커로 맵 이동
+                });
+
+                currentMarkers.push(marker);
+            });
+        }
+
+        // 맵 빈 공간 클릭 시 카드 숨기기 및 선택 해제
+        map.on('click', () => {
+            activeAcademyId = null;
+            renderMarkers();
+            renderBottomCard(null);
+        });
+
+        // 초기 렌더링 실행
+        renderMarkers();
+        renderBottomCard(academies.find(a => a.id === activeAcademyId));
+
+    </script>
+</body>
+</html>

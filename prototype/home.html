@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 하이엔드 보컬 코칭</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome for Icons (Light version preferred for clean UI, but using regular/solid carefully) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Pretendard Font (Essential for clean Korean Typography) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e5edff',
+                            500: '#3182f6', // Toss-like trustworthy blue
+                            600: '#1b64da',
+                        },
+                        surface: '#f2f4f6', // Light gray background common in fintech/clean apps
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.03)',
+                        'float': '0 8px 30px rgba(0, 0, 0, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Hide scrollbar for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            background-color: #e5e7eb; /* Desktop background */
+            display: flex;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Mobile App Frame */
+        #app-frame {
+            width: 100%;
+            max-width: 400px;
+            background-color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame" class="pb-28">
+        
+        <!-- Header: Ultra Clean -->
+        <header class="sticky top-0 bg-white/80 backdrop-blur-xl z-50 px-6 py-4 flex justify-between items-center">
+            <div class="font-extrabold text-[24px] tracking-tighter text-gray-900">
+                eum<span class="text-brand-500">.</span>
+            </div>
+            <div class="flex gap-4 text-gray-800 text-xl">
+                <button aria-label="검색" class="hover:text-brand-500 transition-colors" onclick="location.href='search.html'">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button aria-label="알림" class="relative hover:text-brand-500 transition-colors">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex flex-col">
+            
+            <!-- NEW: Premium Plush 3D Benefit Banner -->
+            <section class="px-5 mt-2">
+                <div class="bg-white rounded-[28px] border border-gray-100 shadow-float relative overflow-hidden flex items-center gap-5 p-6 h-[170px]">
+                    <div class="relative z-10 flex-1">
+                        <span class="text-brand-500 font-bold text-[13px] mb-2 block tracking-wide">신규 가입 혜택</span>
+                        <h2 class="text-gray-900 text-[19px] font-extrabold leading-tight mb-2 tracking-tight">첫 코칭 50% 할인 +<br>5,000P 받기</h2>
+                        <p class="text-gray-600 text-[13px] font-medium">eum에서 노래 실력을 레벨업 하세요!</p>
+                    </div>
+                    <!-- Plush 3D Mic & Clouds illustration area -->
+                    <div class="relative w-28 h-28 shrink-0 flex items-center justify-center bg-brand-50 rounded-full shadow-inner">
+                         <!-- 아이콘으로 3D 느낌을 대체합니다. 실제 서비스에서는 3D 렌더링 이미지를 사용하세요 -->
+                         <i class="fa-solid fa-microphone text-5xl text-brand-500 drop-shadow-md"></i>
+                         <!-- 장식 요소 -->
+                         <div class="absolute -top-2 -right-2 w-6 h-6 bg-yellow-300 rounded-full flex items-center justify-center opacity-80 animate-bounce">
+                             <i class="fa-solid fa-star text-[10px] text-white"></i>
+                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Minimal Quick Menu -->
+            <section class="px-6 mt-8">
+                <div class="grid grid-cols-5 gap-2">
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div class="w-14 h-14 rounded-[20px] bg-surface flex items-center justify-center text-gray-700 text-xl group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+                            <i class="fa-solid fa-microphone-lines"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-600">첨삭</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div class="w-14 h-14 rounded-[20px] bg-surface flex items-center justify-center text-gray-700 text-xl group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+                            <i class="fa-solid fa-video"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-600">라이브</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group" onclick="location.href='map.html'">
+                        <div class="w-14 h-14 rounded-[20px] bg-surface flex items-center justify-center text-gray-700 text-xl group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-600">학원지도</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div class="w-14 h-14 rounded-[20px] bg-surface flex items-center justify-center text-gray-700 text-xl group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-600">챌린지</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group" onclick="location.href='daliy.html'">
+                        <div class="w-14 h-14 rounded-[20px] bg-surface flex items-center justify-center text-gray-700 text-xl group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-600">연습일지</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Dashboard Style Challenge -->
+            <section class="px-5 mt-10">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[19px] font-bold text-gray-900 tracking-tight">진행중인 챌린지</h3>
+                    <button class="text-[13px] text-gray-400 font-medium hover:text-gray-600">전체보기</button>
+                </div>
+                
+                <div class="bg-white rounded-[24px] p-5 border border-gray-100 shadow-soft">
+                    <div class="flex justify-between items-start mb-5">
+                        <div>
+                            <span class="text-[11px] font-bold text-brand-500 bg-brand-50 px-2.5 py-1 rounded-md">자율미션</span>
+                            <h4 class="text-[16px] text-gray-900 font-bold mt-2.5 leading-snug">주 3회 연습일지 작성</h4>
+                            <p class="text-[13px] text-gray-500 mt-1">2일차 진행 중이에요</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] font-medium text-gray-400 block mb-1">달성률</span>
+                            <div class="text-[22px] font-extrabold text-brand-500 tracking-tight">66<span class="text-sm font-bold">%</span></div>
+                        </div>
+                    </div>
+                    <!-- Minimal Progress Bar -->
+                    <div class="w-full bg-surface rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-brand-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 66%"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Minimalist Masters Card Scroll -->
+            <section class="mt-12 pl-5">
+                <div class="flex justify-between items-center mb-4 pr-5">
+                    <h3 class="text-[19px] font-bold text-gray-900 tracking-tight">지금 빠른 피드백 가능한 마스터</h3>
+                    <button class="text-[13px] text-gray-400 font-medium hover:text-gray-600" onclick="location.href='search.html'">더보기</button>
+                </div>
+                
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-6 pr-5 snap-x">
+                    
+                    <!-- Master Card 1 -->
+                    <div class="snap-start shrink-0 w-[130px] bg-white rounded-[20px] p-4 border border-gray-100 shadow-soft flex flex-col items-center cursor-pointer" onclick="location.href='teacherdatail.html'">
+                        <div class="relative mb-3">
+                            <img src="https://ui-avatars.com/api/?name=김뮤&background=f3f4f6&color=111827&font-size=0.4" alt="김뮤직" class="w-16 h-16 rounded-full object-cover">
+                            <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
+                        <h4 class="font-bold text-gray-900 text-[15px] mb-0.5">김뮤직</h4>
+                        <p class="text-[12px] text-gray-500 font-medium">팝보컬 · 뮤지컬</p>
+                        <div class="mt-4 w-full bg-surface rounded-[10px] py-1.5 text-center text-[11px] font-bold text-gray-700">
+                            30분 내 응답
+                        </div>
+                    </div>
+
+                    <!-- Master Card 2 -->
+                    <div class="snap-start shrink-0 w-[130px] bg-white rounded-[20px] p-4 border border-gray-100 shadow-soft flex flex-col items-center cursor-pointer" onclick="location.href='teacherdatail.html'">
+                        <div class="relative mb-3">
+                            <img src="https://ui-avatars.com/api/?name=박소&background=f3f4f6&color=111827&font-size=0.4" alt="박소울" class="w-16 h-16 rounded-full object-cover">
+                            <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
+                        <h4 class="font-bold text-gray-900 text-[15px] mb-0.5">박소울</h4>
+                        <p class="text-[12px] text-gray-500 font-medium">R&B · 랩메이킹</p>
+                        <div class="mt-4 w-full bg-surface rounded-[10px] py-1.5 text-center text-[11px] font-bold text-gray-700">
+                            1시간 내 응답
+                        </div>
+                    </div>
+
+                    <!-- Master Card 3 -->
+                    <div class="snap-start shrink-0 w-[130px] bg-white rounded-[20px] p-4 border border-gray-100 shadow-soft flex flex-col items-center cursor-pointer" onclick="location.href='teacherdatail.html'">
+                        <div class="relative mb-3">
+                            <img src="https://ui-avatars.com/api/?name=최랩&background=f3f4f6&color=111827&font-size=0.4" alt="최랩퍼" class="w-16 h-16 rounded-full object-cover opacity-60">
+                            <div class="absolute bottom-0 right-0 w-4 h-4 bg-gray-300 border-2 border-white rounded-full"></div>
+                        </div>
+                        <h4 class="font-bold text-gray-900 text-[15px] mb-0.5">최랩퍼</h4>
+                        <p class="text-[12px] text-gray-500 font-medium">트렌디 랩 · 믹싱</p>
+                        <div class="mt-4 w-full bg-transparent border border-gray-100 rounded-[10px] py-1.5 text-center text-[11px] font-bold text-gray-400">
+                            오프라인
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Premium B2B Academy Section -->
+            <section class="px-5 mt-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[19px] font-bold text-gray-900 tracking-tight">내 주변 검증된 학원</h3>
+                </div>
+                
+                <div class="bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-soft cursor-pointer" onclick="location.href='euduDetail.html'">
+                    <!-- Edge-to-edge image for modern look -->
+                    <div class="h-[180px] bg-gray-200 relative">
+                        <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover" alt="학원 전경">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                        
+                        <!-- Badges -->
+                        <div class="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-md tracking-wide">
+                            AD
+                        </div>
+                        <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                             <div class="text-white">
+                                 <h4 class="text-[20px] font-bold leading-tight mb-1">한음 실용음악학원 강남점</h4>
+                                 <p class="text-white/80 text-[13px] font-medium">2027 입시반 조기등록 시 10% 혜택</p>
+                             </div>
+                        </div>
+                    </div>
+                    <div class="p-4 flex gap-2">
+                        <span class="text-[12px] font-semibold text-gray-600 bg-surface px-3 py-1.5 rounded-[8px]">📍 강남역 800m</span>
+                        <span class="text-[12px] font-semibold text-gray-600 bg-surface px-3 py-1.5 rounded-[8px]">보컬입시</span>
+                        <span class="text-[12px] font-semibold text-gray-600 bg-surface px-3 py-1.5 rounded-[8px]">미디작곡</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Clean Bottom Navigation -->
+        <nav class="fixed bottom-0 w-full max-w-[400px] bg-white/90 backdrop-blur-xl border-t border-gray-100 px-6 py-2 pb-8 z-50 flex justify-between">
+            <a href="home.html" class="flex flex-col items-center gap-1.5 w-12 text-brand-500">
+                <i class="fa-solid fa-house text-[20px]"></i>
+                <span class="text-[10px] font-bold tracking-wide">홈</span>
+            </a>
+            <a href="search.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-magnifying-glass text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">탐색</span>
+            </a>
+            <a href="reservationlist.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-calendar-check text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">예약</span>
+            </a>
+            <a href="daliy.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors relative">
+                <i class="fa-solid fa-book-open text-[20px]"></i>
+                <span class="absolute top-0 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                <span class="text-[10px] font-semibold tracking-wide">일지</span>
+            </a>
+            <a href="mypage.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-user text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">마이</span>
+            </a>
+        </nav>
+
+    </div>
+
+</body>
+</html>

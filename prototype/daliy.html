@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 연습일지</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#3182f6', 600: '#1b64da' },
+                        surface: '#f2f4f6',
+                    },
+                    boxShadow: { 'soft': '0 4px 20px rgba(0, 0, 0, 0.03)', 'float': '0 8px 30px rgba(0, 0, 0, 0.06)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent;}
+        #app-frame { width: 100%; max-width: 400px; background-color: #ffffff; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.1); overflow-x: hidden; overflow-y: auto;}
+        #record-modal { display: none; }
+        #record-modal.is-open { display: flex; }
+        .toggle-track { transition: background-color 0.2s; }
+        .toggle-track.is-on { background-color: #3182f6; }
+        .toggle-track.is-on .toggle-knob { transform: translateX(20px); }
+        @keyframes pulse-rec {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+        .rec-dot { animation: pulse-rec 1.2s ease-in-out infinite; }
+        @keyframes bar-bounce {
+            0%, 100% { transform: scaleY(0.3); }
+            50% { transform: scaleY(1); }
+        }
+        .wave-bar { transform-origin: bottom; animation: bar-bounce 0.8s ease-in-out infinite; }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+    <div id="app-frame" class="pb-28">
+        
+        <header class="sticky top-0 bg-white/90 backdrop-blur-xl z-50 px-6 py-4 flex justify-between items-center border-b border-gray-50">
+            <div class="font-extrabold text-xl tracking-tight text-gray-900">연습일지</div>
+            <div class="text-brand-500 font-bold text-[14px] bg-brand-50 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <i class="fa-solid fa-p"></i> 1,200
+            </div>
+        </header>
+
+        <main class="flex flex-col px-5 pt-5">
+            
+            <!-- 출석 체크 -->
+            <section class="mb-8 text-center">
+                <p class="text-[15px] font-medium text-gray-900 mb-1">모두 완료하면</p>
+                <p class="text-[20px] font-extrabold text-gray-900 tracking-tight mb-1.5">
+                    <span class="text-brand-500">500P</span>를 더 드려요
+                </p>
+                <p class="text-[13px] text-gray-400 font-medium mb-5">금요일까지 연속 출석하면 받을 수 있어요</p>
+
+                <div class="bg-white rounded-[24px] px-3 py-5 shadow-float border border-gray-100">
+                    <div class="flex items-center">
+                        <div class="flex flex-col items-center gap-2 shrink-0">
+                            <div class="relative w-12 h-12 rounded-full bg-white border-2 border-brand-500 flex items-center justify-center">
+                                <i class="fa-solid fa-microphone text-[15px] text-brand-500"></i>
+                                <div class="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-brand-500 rounded-full flex items-center justify-center border-2 border-white">
+                                    <i class="fa-solid fa-check text-[8px] text-white"></i>
+                                </div>
+                            </div>
+                            <span class="text-[11px] font-medium text-gray-400">월</span>
+                        </div>
+                        <div class="flex-1 mx-1 border-t border-dashed border-gray-300 self-start mt-6"></div>
+
+                        <div class="flex flex-col items-center gap-2 shrink-0">
+                            <div class="relative w-12 h-12 rounded-full bg-white border-2 border-brand-500 flex items-center justify-center">
+                                <i class="fa-solid fa-microphone text-[15px] text-brand-500"></i>
+                                <div class="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-brand-500 rounded-full flex items-center justify-center border-2 border-white">
+                                    <i class="fa-solid fa-check text-[8px] text-white"></i>
+                                </div>
+                            </div>
+                            <span class="text-[11px] font-medium text-gray-400">화</span>
+                        </div>
+                        <div class="flex-1 mx-1 border-t border-dashed border-gray-300 self-start mt-6"></div>
+
+                        <div class="flex flex-col items-center gap-2 shrink-0">
+                            <div class="relative w-12 h-12 rounded-full bg-white border-2 border-brand-500 flex items-center justify-center">
+                                <i class="fa-solid fa-microphone text-[15px] text-brand-500"></i>
+                                <div class="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-brand-500 rounded-full flex items-center justify-center border-2 border-white">
+                                    <i class="fa-solid fa-check text-[8px] text-white"></i>
+                                </div>
+                            </div>
+                            <span class="text-[11px] font-medium text-gray-400">수</span>
+                        </div>
+                        <div class="flex-1 mx-1 border-t border-dashed border-gray-300 self-start mt-6"></div>
+
+                        <div class="flex flex-col items-center gap-2 shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 border-2 border-brand-500 flex items-center justify-center shadow-[0_4px_14px_rgba(49,130,246,0.3)]">
+                                <i class="fa-solid fa-microphone text-[15px] text-white"></i>
+                            </div>
+                            <span class="text-[11px] font-bold text-brand-500">목</span>
+                        </div>
+                        <div class="flex-1 mx-1 border-t border-dashed border-gray-300 self-start mt-6"></div>
+
+                        <div class="flex flex-col items-center gap-2 shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center">
+                                <i class="fa-solid fa-microphone text-[15px] text-gray-300"></i>
+                            </div>
+                            <span class="text-[11px] font-medium text-gray-300">금</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 지정곡 미션 -->
+            <section class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[18px] font-bold text-gray-900 tracking-tight">지정곡 미션</h3>
+                    <span class="text-[11px] font-bold text-brand-500 bg-brand-50 px-2 py-1 rounded-md">오늘의 미션</span>
+                </div>
+                
+                <div class="bg-white border border-brand-100 rounded-[24px] p-5 shadow-float relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center shrink-0 shadow-sm">
+                                <div class="w-[18px] h-[18px] bg-white rounded-[6px] flex items-center justify-center">
+                                    <i class="fa-solid fa-music text-[9px] text-brand-500"></i>
+                                </div>
+                            </div>
+                            <span class="text-[14px] font-bold text-gray-800 tracking-tight">지정곡 미션</span>
+                        </div>
+                        <span class="text-[12px] text-gray-400 font-medium">방금 전</span>
+                    </div>
+                    <h4 class="font-bold text-[15px] text-gray-900 mb-2.5">밤양갱 - 기본 발성 체크 (1절)</h4>
+                    
+                    <!-- 오디오 플레이어 -->
+                    <div class="flex items-center gap-3 bg-surface rounded-[20px] px-4 py-3.5 mb-5">
+                        <button class="w-11 h-11 bg-brand-500 text-white rounded-full flex items-center justify-center shrink-0 shadow-sm hover:bg-brand-600 transition-colors">
+                            <i class="fa-solid fa-play text-[13px] ml-0.5"></i>
+                        </button>
+                        <div class="flex-1 flex items-center justify-between gap-[3px] h-9 px-1">
+                            <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-5 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-7 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-8 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-5 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-7 rounded-full"></div>
+                            <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                        </div>
+                        <span class="text-[13px] font-semibold text-gray-500 shrink-0">0:45</span>
+                    </div>
+
+                    <div class="bg-brand-50 rounded-[16px] p-4 flex flex-col gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-500 shrink-0 mt-0.5">
+                                <i class="fa-solid fa-lightbulb text-[14px]"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-[14px] font-bold text-gray-900 mb-0.5">어딘가 아쉽게 들리시나요?</h5>
+                                <p class="text-[12px] text-gray-600 leading-snug">이 녹음본을 그대로 마스터에게 보내<br>정확한 문제점을 진단받아 보세요.</p>
+                            </div>
+                        </div>
+                        <button class="w-full bg-brand-500 hover:bg-brand-600 transition-colors text-white text-[14px] font-bold py-3 rounded-[12px] shadow-[0_4px_15px_rgba(49,130,246,0.25)] flex items-center justify-center gap-1.5 mt-1" onclick="location.href='search.html'">
+                            <i class="fa-solid fa-microphone-lines text-[13px]"></i> 이 곡으로 피드백 신청하기
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 자율 미션 -->
+            <section class="mb-10">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[18px] font-bold text-gray-900 tracking-tight">자율 미션</h3>
+                    <span class="text-[11px] font-bold text-gray-500 bg-surface px-2 py-1 rounded-md border border-gray-100">+300P</span>
+                </div>
+                <div class="bg-surface rounded-[24px] p-6 flex flex-col items-center text-center border border-gray-100">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-brand-500 text-2xl mb-3 shadow-sm">
+                        <i class="fa-solid fa-microphone"></i>
+                    </div>
+                    <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded mb-2">자율 미션</span>
+                    <h4 class="font-bold text-[16px] text-gray-900 mb-1">오늘 연습한 곡 자유 녹음하기</h4>
+                    <p class="text-[13px] text-gray-500 mb-5">원하는 곡을 녹음하고 일지에 남겨보세요</p>
+                    <button id="open-record-btn" type="button" class="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[15px] hover:bg-gray-800 transition">
+                        지금 녹음 시작하기
+                    </button>
+                </div>
+            </section>
+
+            <section>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[17px] font-bold text-gray-900 tracking-tight">지난 연습 기록</h3>
+                    <button class="text-[12px] text-gray-400 font-medium hover:text-gray-600">전체보기</button>
+                </div>
+                
+                <div class="flex flex-col gap-3">
+                    <div class="bg-white border border-gray-100 rounded-[20px] p-4 shadow-soft">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center shrink-0 shadow-sm">
+                                    <div class="w-[18px] h-[18px] bg-white rounded-[6px] flex items-center justify-center">
+                                        <i class="fa-solid fa-comment-dots text-[9px] text-brand-500"></i>
+                                    </div>
+                                </div>
+                                <span class="text-[14px] font-bold text-gray-800 tracking-tight">피드백 완료</span>
+                            </div>
+                            <span class="text-[12px] text-gray-400 font-medium">8월 25일</span>
+                        </div>
+                        <h4 class="font-bold text-[15px] text-gray-900 mb-0.5">고음 진입 시 호흡 체크</h4>
+                        <p class="text-[12px] text-gray-500 font-medium mb-2.5">김뮤직 마스터</p>
+                        <div class="flex items-center gap-3 bg-surface rounded-[20px] px-4 py-3.5 mb-3">
+                            <button class="w-11 h-11 bg-brand-500 text-white rounded-full flex items-center justify-center shrink-0 shadow-sm hover:bg-brand-600 transition-colors">
+                                <i class="fa-solid fa-play text-[13px] ml-0.5"></i>
+                            </button>
+                            <div class="flex-1 flex items-center justify-between gap-[3px] h-9 px-1">
+                                <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-7 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-5 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-8 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-5 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-7 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                            </div>
+                            <span class="text-[13px] font-semibold text-gray-500 shrink-0">1:45</span>
+                        </div>
+
+                        <!-- 구간별 피드백 미리보기 -->
+                        <div class="bg-gray-900 rounded-[16px] p-3.5 mb-3">
+                            <p class="text-[10px] font-bold text-gray-400 mb-2">마스터 구간별 피드백</p>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-start gap-2.5 py-1">
+                                    <span class="shrink-0 text-[11px] font-bold text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded tabular-nums">0:45</span>
+                                    <span class="text-[12px] text-gray-300 leading-snug">고음 진입 — 배 압력이 풀려요</span>
+                                </div>
+                                <div class="flex items-start gap-2.5 py-1">
+                                    <span class="shrink-0 text-[11px] font-bold text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded tabular-nums">1:12</span>
+                                    <span class="text-[12px] text-gray-300 leading-snug">후렴 — 톤이 안정적이에요 👍</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="w-full py-2.5 bg-surface text-gray-700 rounded-xl font-bold text-[13px] border border-gray-200 flex items-center justify-center gap-1.5 hover:bg-gray-100 transition" onclick="location.href='chat.html'">
+                            <i class="fa-solid fa-comment-dots"></i> 구간별 피드백 전체 보기
+                        </button>
+                    </div>
+
+                    <div class="bg-white border border-gray-100 rounded-[20px] p-4 shadow-soft opacity-70">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded">자율 연습</span>
+                                <span class="text-[12px] text-gray-400 font-medium">8월 23일</span>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-[15px] text-gray-900 mb-2.5">자작곡 멜로디 스케치</h4>
+                        <div class="flex items-center gap-3 bg-surface rounded-[20px] px-4 py-3.5">
+                            <button class="w-11 h-11 bg-brand-500 text-white rounded-full flex items-center justify-center shrink-0 shadow-sm hover:bg-brand-600 transition-colors">
+                                <i class="fa-solid fa-play text-[13px] ml-0.5"></i>
+                            </button>
+                            <div class="flex-1 flex items-center justify-between gap-[3px] h-9 px-1">
+                                <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-7 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-5 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-8 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-3 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-5 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-7 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-2 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-4 rounded-full"></div>
+                                <div class="w-[3px] bg-gray-300 h-6 rounded-full"></div>
+                            </div>
+                            <span class="text-[13px] font-semibold text-gray-500 shrink-0">1:24</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="fixed bottom-0 w-full max-w-[400px] bg-white/90 backdrop-blur-xl border-t border-gray-100 px-6 py-2 pb-8 z-50 flex justify-between">
+            <a href="home.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-house text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">홈</span>
+            </a>
+            <a href="search.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-magnifying-glass text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">탐색</span>
+            </a>
+            <a href="reservationlist.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-calendar-check text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">예약</span>
+            </a>
+            <a href="daliy.html" class="flex flex-col items-center gap-1.5 w-12 text-brand-500 relative">
+                <i class="fa-solid fa-book-open text-[20px]"></i>
+                <span class="absolute top-0 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                <span class="text-[10px] font-bold tracking-wide">일지</span>
+            </a>
+            <a href="mypage.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-user text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">마이</span>
+            </a>
+        </nav>
+
+        <!-- 녹음 모달 -->
+        <div id="record-modal" class="fixed inset-0 z-[60] max-w-[400px] mx-auto flex-col justify-end bg-black/40 backdrop-blur-sm">
+            <div class="bg-white rounded-t-[28px] px-5 pt-5 pb-10 shadow-float max-h-[92vh] overflow-y-auto no-scrollbar">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[18px] font-bold text-gray-900">자유 녹음</h3>
+                    <button id="close-record-btn" type="button" class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-gray-500 hover:bg-gray-200 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- 이어폰 안내 -->
+                <div class="bg-amber-50 border border-amber-100 rounded-[14px] px-3.5 py-3 flex gap-2.5 mb-4">
+                    <i class="fa-solid fa-headphones text-amber-500 mt-0.5 shrink-0"></i>
+                    <p class="text-[12px] text-amber-800 leading-relaxed">
+                        <span class="font-bold">이어폰 사용을 권장해요.</span> 스피커로 모니터링하면 마이크가 소리를 다시 잡아 울림(하울링)이 날 수 있어요.
+                    </p>
+                </div>
+
+                <!-- 모니터링 토글 -->
+                <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div>
+                        <p class="text-[14px] font-bold text-gray-900">실시간 모니터링</p>
+                        <p class="text-[12px] text-gray-500 mt-0.5">말하는 동시에 내 목소리 들리기</p>
+                    </div>
+                    <button id="monitor-toggle" type="button" role="switch" aria-checked="true" class="toggle-track is-on relative w-12 h-7 rounded-full bg-gray-200 shrink-0">
+                        <span class="toggle-knob absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform"></span>
+                    </button>
+                </div>
+
+                <!-- 이펙트 -->
+                <div class="py-3 border-b border-gray-100 mb-4">
+                    <p class="text-[12px] font-bold text-gray-400 mb-3 tracking-wide">이펙트 (선택)</p>
+                    <div class="flex gap-2">
+                        <button id="reverb-toggle" type="button" class="effect-chip flex-1 py-2.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 bg-white transition">
+                            <i class="fa-solid fa-water mr-1"></i> 리버브
+                        </button>
+                        <button id="pitch-toggle" type="button" class="effect-chip flex-1 py-2.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 bg-white transition">
+                            <i class="fa-solid fa-music mr-1"></i> 피치 보정
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 녹음 상태 -->
+                <div class="flex flex-col items-center py-4 mb-2">
+                    <div id="rec-status" class="flex items-center gap-2 mb-3 h-5">
+                        <span class="text-[13px] text-gray-400 font-medium">녹음 준비됨</span>
+                    </div>
+                    <div id="rec-timer" class="text-[36px] font-extrabold text-gray-900 tabular-nums tracking-tight mb-4">0:00</div>
+                    <div id="waveform" class="flex items-end justify-center gap-[3px] h-10 mb-5 opacity-30">
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.1s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.2s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.15s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.05s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.25s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.12s"></div>
+                        <div class="wave-bar w-[3px] h-full bg-brand-500 rounded-full" style="animation-delay:0.18s"></div>
+                    </div>
+                    <button id="record-btn" type="button" class="w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_8px_24px_rgba(239,68,68,0.35)] hover:bg-red-600 transition">
+                        <i id="record-btn-icon" class="fa-solid fa-microphone text-2xl"></i>
+                    </button>
+                    <p id="record-hint" class="text-[12px] text-gray-400 mt-3">탭하여 녹음 시작</p>
+                </div>
+
+                <!-- 녹음 완료 후 재생 -->
+                <div id="playback-area" class="hidden">
+                    <div class="bg-surface rounded-[16px] p-4 flex items-center gap-3 mb-3">
+                        <button id="playback-btn" type="button" class="w-10 h-10 bg-brand-500 text-white rounded-full flex items-center justify-center shrink-0">
+                            <i id="playback-icon" class="fa-solid fa-play text-[12px] ml-0.5"></i>
+                        </button>
+                        <div class="flex-1">
+                            <p class="text-[13px] font-bold text-gray-900">방금 녹음한 연습</p>
+                            <p id="playback-duration" class="text-[11px] text-gray-500">0:00</p>
+                        </div>
+                    </div>
+                    <button id="save-record-btn" type="button" class="w-full py-3.5 bg-brand-500 text-white rounded-xl font-bold text-[15px] hover:bg-brand-600 transition">
+                        일지에 저장하기 (+300P)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const modal = document.getElementById('record-modal');
+        const monitorToggle = document.getElementById('monitor-toggle');
+        const reverbToggle = document.getElementById('reverb-toggle');
+        const pitchToggle = document.getElementById('pitch-toggle');
+        const recordBtn = document.getElementById('record-btn');
+        const recTimer = document.getElementById('rec-timer');
+        const recStatus = document.getElementById('rec-status');
+        const waveform = document.getElementById('waveform');
+        const playbackArea = document.getElementById('playback-area');
+        const playbackBtn = document.getElementById('playback-btn');
+        const playbackIcon = document.getElementById('playback-icon');
+        const playbackDuration = document.getElementById('playback-duration');
+        const recordHint = document.getElementById('record-hint');
+
+        let audioCtx = null;
+        let micStream = null;
+        let sourceNode = null;
+        let monitorGain = null;
+        let reverbGain = null;
+        let pitchFilter = null;
+        let delayNode = null;
+        let feedbackGain = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordedBlob = null;
+        let playbackAudio = null;
+        let isRecording = false;
+        let isMonitorOn = true;
+        let isReverbOn = false;
+        let isPitchOn = false;
+        let timerInterval = null;
+        let elapsedSec = 0;
+
+        function formatTime(s) {
+            const sec = Math.floor(s);
+            return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+        }
+
+        function setToggle(el, on) {
+            el.classList.toggle('is-on', on);
+            el.setAttribute('aria-checked', on ? 'true' : 'false');
+        }
+
+        function setEffectChip(el, on) {
+            el.classList.toggle('border-brand-500', on);
+            el.classList.toggle('bg-brand-50', on);
+            el.classList.toggle('text-brand-600', on);
+            el.classList.toggle('border-gray-200', !on);
+            el.classList.toggle('bg-white', !on);
+            el.classList.toggle('text-gray-600', !on);
+        }
+
+        async function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+            sourceNode = audioCtx.createMediaStreamSource(micStream);
+
+            monitorGain = audioCtx.createGain();
+            monitorGain.gain.value = isMonitorOn ? 0.75 : 0;
+
+            delayNode = audioCtx.createDelay(0.3);
+            delayNode.delayTime.value = 0.07;
+            feedbackGain = audioCtx.createGain();
+            feedbackGain.gain.value = 0.35;
+            reverbGain = audioCtx.createGain();
+            reverbGain.gain.value = 0;
+
+            pitchFilter = audioCtx.createBiquadFilter();
+            pitchFilter.type = 'peaking';
+            pitchFilter.frequency.value = 2800;
+            pitchFilter.Q.value = 1.2;
+            pitchFilter.gain.value = 0;
+
+            const dry = audioCtx.createGain();
+            dry.gain.value = 1;
+
+            sourceNode.connect(dry);
+            dry.connect(pitchFilter);
+            pitchFilter.connect(monitorGain);
+
+            sourceNode.connect(delayNode);
+            delayNode.connect(feedbackGain);
+            feedbackGain.connect(delayNode);
+            delayNode.connect(reverbGain);
+            reverbGain.connect(monitorGain);
+
+            monitorGain.connect(audioCtx.destination);
+        }
+
+        function updateMonitor() {
+            if (monitorGain) monitorGain.gain.value = isMonitorOn ? 0.75 : 0;
+        }
+
+        function updateReverb() {
+            if (reverbGain) reverbGain.gain.value = isReverbOn ? 0.45 : 0;
+        }
+
+        function updatePitch() {
+            if (pitchFilter) pitchFilter.gain.value = isPitchOn ? 4 : 0;
+        }
+
+        function stopMic() {
+            if (micStream) micStream.getTracks().forEach((t) => t.stop());
+            micStream = null;
+            if (audioCtx) { audioCtx.close(); audioCtx = null; }
+            sourceNode = monitorGain = reverbGain = pitchFilter = delayNode = feedbackGain = null;
+        }
+
+        function openModal() {
+            modal.classList.add('is-open');
+            playbackArea.classList.add('hidden');
+            elapsedSec = 0;
+            recTimer.textContent = '0:00';
+            recordHint.textContent = '탭하여 녹음 시작';
+            recStatus.innerHTML = '<span class="text-[13px] text-gray-400 font-medium">녹음 준비됨</span>';
+            waveform.classList.add('opacity-30');
+            initAudio().catch(() => {
+                alert('마이크 권한이 필요해요. 브라우저 설정에서 허용해 주세요.');
+                closeModal();
+            });
+        }
+
+        function closeModal() {
+            if (isRecording) stopRecording();
+            stopMic();
+            if (playbackAudio) { playbackAudio.pause(); playbackAudio = null; }
+            modal.classList.remove('is-open');
+        }
+
+        function startRecording() {
+            if (!micStream) return;
+            recordedChunks = [];
+            recordedBlob = null;
+            mediaRecorder = new MediaRecorder(micStream);
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                recordedBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                playbackArea.classList.remove('hidden');
+                playbackDuration.textContent = formatTime(elapsedSec);
+                recordHint.textContent = '다시 녹음하려면 버튼을 누르세요';
+            };
+            mediaRecorder.start();
+            isRecording = true;
+            elapsedSec = 0;
+            recTimer.textContent = '0:00';
+            recStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500 rec-dot"></span><span class="text-[13px] text-red-500 font-bold">녹음 중</span>';
+            waveform.classList.remove('opacity-30');
+            document.getElementById('record-btn-icon').className = 'fa-solid fa-stop text-2xl';
+            recordBtn.classList.replace('bg-red-500', 'bg-gray-900');
+            recordHint.textContent = '탭하여 녹음 중지';
+            timerInterval = setInterval(() => {
+                elapsedSec++;
+                recTimer.textContent = formatTime(elapsedSec);
+            }, 1000);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            isRecording = false;
+            clearInterval(timerInterval);
+            recStatus.innerHTML = '<span class="text-[13px] text-brand-500 font-bold"><i class="fa-solid fa-check mr-1"></i>녹음 완료</span>';
+            waveform.classList.add('opacity-30');
+            document.getElementById('record-btn-icon').className = 'fa-solid fa-microphone text-2xl';
+            recordBtn.classList.replace('bg-gray-900', 'bg-red-500');
+        }
+
+        document.getElementById('open-record-btn').addEventListener('click', openModal);
+        document.getElementById('close-record-btn').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        monitorToggle.addEventListener('click', () => {
+            isMonitorOn = !isMonitorOn;
+            setToggle(monitorToggle, isMonitorOn);
+            updateMonitor();
+        });
+
+        reverbToggle.addEventListener('click', () => {
+            isReverbOn = !isReverbOn;
+            setEffectChip(reverbToggle, isReverbOn);
+            updateReverb();
+        });
+
+        pitchToggle.addEventListener('click', () => {
+            isPitchOn = !isPitchOn;
+            setEffectChip(pitchToggle, isPitchOn);
+            updatePitch();
+        });
+
+        recordBtn.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (isRecording) stopRecording();
+            else startRecording();
+        });
+
+        playbackBtn.addEventListener('click', () => {
+            if (!recordedBlob) return;
+            if (playbackAudio && !playbackAudio.paused) {
+                playbackAudio.pause();
+                playbackIcon.className = 'fa-solid fa-play text-[12px] ml-0.5';
+                return;
+            }
+            if (playbackAudio) playbackAudio.pause();
+            playbackAudio = new Audio(URL.createObjectURL(recordedBlob));
+            playbackAudio.play();
+            playbackIcon.className = 'fa-solid fa-pause text-[12px]';
+            playbackAudio.onended = () => { playbackIcon.className = 'fa-solid fa-play text-[12px] ml-0.5'; };
+        });
+
+        document.getElementById('save-record-btn').addEventListener('click', () => {
+            alert('연습 기록이 저장되었어요! +300P');
+            closeModal();
+        });
+    </script>
+</body>
+</html>

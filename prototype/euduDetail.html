@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 학원 상세</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { fontFamily: { sans: ['Pretendard', 'sans-serif'] }, colors: { brand: { 50: '#f0f5ff', 500: '#3182f6' }, surface: '#f2f4f6' } }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        body { background-color: #e5e7eb; display: flex; justify-content: center; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #ffffff; min-height: 100vh; position: relative; overflow-y: auto;}
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+    <div id="app-frame" class="pb-24">
+        <div class="relative h-[260px]">
+            <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40"></div>
+            
+            <header class="absolute top-0 w-full p-4 flex justify-between items-center z-10 text-white">
+                <button class="w-8 h-8 flex items-center justify-center bg-black/30 rounded-full backdrop-blur-md" onclick="location.href='search.html'"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="flex gap-3">
+                    <button class="w-8 h-8 flex items-center justify-center bg-black/30 rounded-full backdrop-blur-md"><i class="fa-regular fa-heart"></i></button>
+                    <button class="w-8 h-8 flex items-center justify-center bg-black/30 rounded-full backdrop-blur-md"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
+                </div>
+            </header>
+
+            <div class="absolute bottom-5 left-5 right-5 text-white">
+                <span class="bg-brand-500 text-[10px] font-bold px-2 py-1 rounded-sm mb-2 inline-block">공식 파트너</span>
+                <h1 class="text-2xl font-extrabold mb-1">한음 실용음악학원 강남점</h1>
+                <p class="text-[14px] text-white/80 font-medium flex items-center gap-1">
+                    <i class="fa-solid fa-location-dot text-[12px]"></i> 강남역 4번 출구 도보 3분 (800m)
+                </p>
+            </div>
+        </div>
+
+        <main class="px-5 pt-6">
+            <!-- 쿠폰 발급 UI -->
+            <div class="bg-brand-50 border border-brand-100 rounded-2xl p-4 flex justify-between items-center mb-6">
+                <div>
+                    <div class="text-[12px] font-bold text-brand-500 mb-0.5">eum 단독 혜택</div>
+                    <div class="text-[15px] font-bold text-gray-900">2027 입시반 첫 달 10% 할인</div>
+                </div>
+                <button class="bg-brand-500 text-white text-[12px] font-bold px-4 py-2 rounded-lg shadow-sm">쿠폰받기</button>
+            </div>
+
+            <!-- 수강 과목 -->
+            <h3 class="text-[17px] font-bold text-gray-900 mb-3">수강 과목</h3>
+            <div class="flex flex-wrap gap-2 mb-8">
+                <span class="px-3 py-1.5 bg-brand-50 text-brand-500 text-[13px] font-medium rounded-md">싱어송라이터</span>
+                <span class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[13px] font-medium rounded-md">입시</span>
+            </div>
+
+            <!-- 운영 정보 -->
+            <section class="mb-8 space-y-6">
+                <div class="flex gap-6 items-start">
+                    <div class="w-[72px] shrink-0 font-bold text-[15px] text-gray-900 pt-0.5">운영시간</div>
+                    <div class="flex-1 text-[14px] text-gray-500 font-medium leading-[1.7] space-y-0.5">
+                        <p>평일 10:00 - 22:00</p>
+                        <p>토요일 10:00 - 18:00</p>
+                        <p>일요일 · 공휴일 휴무</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-start">
+                    <div class="w-[72px] shrink-0 font-bold text-[15px] text-gray-900 pt-0.5">주소</div>
+                    <div class="flex-1 text-[14px] text-gray-500 font-medium leading-[1.7] space-y-0.5">
+                        <p>서울 강남구 강남대로 396</p>
+                        <p>한음빌딩 3층</p>
+                        <p>강남역 4번 출구 도보 3분</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 학원 소개 텍스트 -->
+            <h3 class="text-[17px] font-bold text-gray-900 mb-3">학원 소개</h3>
+            <p class="text-[14px] text-gray-600 leading-relaxed mb-8">
+                최신식 녹음실 3개, 개인 연습실 20개를 보유한 강남 최고 시설의 실용음악학원입니다. 매월 대형 기획사 비공개 내방 오디션이 진행되며, 체계적인 월말 평가를 통해 실전 감각을 키워드립니다.
+            </p>
+
+            <!-- 시설 미리보기 -->
+            <h3 class="text-[17px] font-bold text-gray-900 mb-3">시설 미리보기</h3>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                <img src="https://images.unsplash.com/photo-1516280440502-613098522616?w=200&h=150&fit=crop" class="w-32 h-24 object-cover rounded-xl shrink-0">
+                <img src="https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=200&h=150&fit=crop" class="w-32 h-24 object-cover rounded-xl shrink-0">
+                <img src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=200&h=150&fit=crop" class="w-32 h-24 object-cover rounded-xl shrink-0">
+            </div>
+        </main>
+
+        <div class="fixed bottom-0 w-full max-w-[400px] bg-white border-t border-gray-100 p-4 pb-6 z-50">
+            <div class="flex gap-3">
+                <button class="w-[30%] py-3.5 bg-surface text-gray-700 rounded-xl font-bold text-[15px] border border-gray-200 flex items-center justify-center gap-1">
+                    <i class="fa-regular fa-comment-dots text-lg"></i> 문의
+                </button>
+                <button class="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[15px] shadow-lg flex items-center justify-center gap-1" onclick="location.href='reservation.html'">
+                    방문 상담 예약하기
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

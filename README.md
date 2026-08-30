@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# eum (음) — Next.js
 
-## Getting Started
+보컬 코칭 플랫폼 **eum** Next.js 앱입니다.
 
-First, run the development server:
+## 시작하기
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 아키텍처
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+상세 플로우 · DB 설계: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-## Learn More
+## 주요 라우트
 
-To learn more about Next.js, take a look at the following resources:
+| 경로 | 설명 |
+|------|------|
+| `/search` | 마스터 탐색 |
+| `/masters/[id]` | 프로필 · 상품 선택 |
+| `/masters/[id]/feedback` | 피드백 신청·결제 |
+| `/masters/[id]/reservation` | 전화/방문 예약 |
+| `/feedback/[orderId]` | 피드백 수신 |
+| `/master` | 마스터 대기함 |
+| `/master/feedback/[orderId]` | 구간 코멘트 작성 |
+| `/master/settings/pricing` | 요금 설정 |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`prototype/` — 기존 HTML 프로토타입 (참고용)

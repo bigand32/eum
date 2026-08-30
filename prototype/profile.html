@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 마스터 프로필</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e5edff',
+                            500: '#3182f6', // Toss-like Blue
+                            600: '#1b64da',
+                        },
+                        surface: '#f9fafb', // Very light gray for backgrounds
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.03)',
+                        'float': '0 8px 30px rgba(0, 0, 0, 0.06)',
+                        'inner-light': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body {
+            background-color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #app-frame {
+            width: 100%;
+            max-width: 400px;
+            background-color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame" class="pb-32 relative">
+        
+        <!-- Header (투명 배경에서 스크롤 시 불투명해지는 효과를 위한 기초) -->
+        <header class="sticky top-0 bg-white/90 backdrop-blur-md z-50 px-5 py-4 flex justify-between items-center border-b border-gray-50">
+            <button aria-label="뒤로가기" class="text-gray-800 text-xl hover:text-brand-500 transition-colors w-8" onclick="location.href='teacherdatail.html'">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="font-bold text-[16px] text-gray-900 flex-1 text-center">
+                프로필
+            </div>
+            <div class="flex gap-4 text-gray-800 text-xl w-8 justify-end">
+                <button aria-label="공유" class="hover:text-brand-500 transition-colors">
+                    <i class="fa-regular fa-share-from-square"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex flex-col">
+            
+            <section class="px-6 pt-6 pb-4">
+                <div class="flex items-center gap-5">
+                    <!-- Profile Image with Status -->
+                    <div class="relative shrink-0">
+                        <img src="https://ui-avatars.com/api/?name=김뮤&background=f3f4f6&color=111827&font-size=0.4" alt="김뮤직" class="w-20 h-20 rounded-full object-cover shadow-sm border border-gray-100">
+                        <div class="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
+                    </div>
+                    
+                    <!-- Profile Info -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="bg-gray-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm tracking-wide">PRO</span>
+                            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">김뮤직</h1>
+                        </div>
+                        <p class="text-[14px] text-gray-500 font-medium mt-1">팝보컬 · 뮤지컬 발성 전문</p>
+                        <p class="text-[13px] text-brand-500 font-semibold mt-1.5 flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-[11px]"></i> 평균 30분 내 응답
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-5 text-[15px] text-gray-700 leading-relaxed font-medium">
+                    "정확한 진단이 빠른 성장을 만듭니다. 불필요한 힘을 빼고 본인만의 톤을 찾도록 도와드릴게요."
+                </div>
+            </section>
+
+            <section class="px-6 py-4">
+                <div class="bg-surface rounded-[20px] p-4 flex justify-between items-center text-center">
+                    <div class="flex-1">
+                        <div class="text-[12px] text-gray-500 font-semibold mb-1">누적 첨삭</div>
+                        <div class="text-[18px] font-extrabold text-gray-900">842<span class="text-[14px] font-medium ml-0.5">건</span></div>
+                    </div>
+                    <div class="w-px h-10 bg-gray-200"></div>
+                    <div class="flex-1">
+                        <div class="text-[12px] text-gray-500 font-semibold mb-1">평점</div>
+                        <div class="text-[18px] font-extrabold text-gray-900 flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-star text-yellow-400 text-[14px]"></i> 4.9
+                        </div>
+                    </div>
+                    <div class="w-px h-10 bg-gray-200"></div>
+                    <div class="flex-1">
+                        <div class="text-[12px] text-gray-500 font-semibold mb-1">리뷰</div>
+                        <div class="text-[18px] font-extrabold text-gray-900">312<span class="text-[14px] font-medium ml-0.5">개</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="px-6 pt-6 pb-2 mt-2">
+                <h3 class="text-[18px] font-bold text-gray-900 tracking-tight mb-4">코칭 메뉴</h3>
+                
+                <div class="flex flex-col gap-3">
+                    <!-- 상품 1: 비동기 첨삭 (미끼 상품) -->
+                    <label class="relative block cursor-pointer group">
+                        <input type="radio" name="product" class="peer sr-only" checked>
+                        <div class="border border-gray-200 rounded-[20px] p-5 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:ring-1 peer-checked:ring-brand-500">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="text-[11px] font-bold text-brand-500 bg-white px-2 py-1 rounded-md border border-brand-100 mb-2 inline-block">BEST</span>
+                                    <h4 class="text-[16px] font-bold text-gray-900 flex items-center gap-2">
+                                        음성/영상 피드백 <i class="fa-solid fa-microphone-lines text-gray-400 text-[13px]"></i>
+                                    </h4>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[18px] font-extrabold text-gray-900 tracking-tight">20,000<span class="text-[14px] font-bold">원</span></div>
+                                </div>
+                            </div>
+                            <p class="text-[13px] text-gray-500 font-medium leading-relaxed">
+                                연습 파일(녹음/영상)을 올리면 24시간 내에 텍스트와 음성으로 디테일한 피드백을 드립니다.
+                            </p>
+                        </div>
+                        <!-- 체크 아이콘 -->
+                        <div class="absolute top-5 right-5 w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center opacity-100 peer-checked:border-brand-500 peer-checked:bg-brand-500 transition-colors">
+                            <i class="fa-solid fa-check text-white text-[10px] opacity-0 peer-checked:opacity-100 transition-opacity"></i>
+                        </div>
+                    </label>
+
+                    <!-- 상품 2: 실시간 라이브 (본 상품) -->
+                    <label class="relative block cursor-pointer group">
+                        <input type="radio" name="product" class="peer sr-only">
+                        <div class="border border-gray-200 rounded-[20px] p-5 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:ring-1 peer-checked:ring-brand-500">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="text-[16px] font-bold text-gray-900 flex items-center gap-2 mt-1">
+                                        1:1 라이브 코칭 (30분) <i class="fa-solid fa-video text-gray-400 text-[13px]"></i>
+                                    </h4>
+                                </div>
+                                <div class="text-right mt-1">
+                                    <div class="text-[18px] font-extrabold text-gray-900 tracking-tight">55,000<span class="text-[14px] font-bold">원</span></div>
+                                </div>
+                            </div>
+                            <p class="text-[13px] text-gray-500 font-medium leading-relaxed mt-2">
+                                줌(Zoom)을 통해 실시간으로 발성을 체크하고 맞춤형 훈련법을 직접 지도합니다.
+                            </p>
+                        </div>
+                        <!-- 체크 아이콘 -->
+                        <div class="absolute top-6 right-5 w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center opacity-100 peer-checked:border-brand-500 peer-checked:bg-brand-500 transition-colors">
+                            <i class="fa-solid fa-check text-white text-[10px] opacity-0 peer-checked:opacity-100 transition-opacity"></i>
+                        </div>
+                    </label>
+                </div>
+            </section>
+
+            <section class="px-6 py-6 border-t border-gray-100 mt-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[18px] font-bold text-gray-900 tracking-tight">비포 & 애프터</h3>
+                    <button class="text-[13px] text-brand-500 font-bold">더보기</button>
+                </div>
+                
+                <!-- Audio Sample Card UI -->
+                <div class="bg-gray-900 rounded-[20px] p-4 flex items-center gap-4 text-white shadow-float">
+                    <button class="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center shrink-0 hover:bg-brand-400 transition-colors">
+                        <i class="fa-solid fa-play ml-1 text-lg"></i>
+                    </button>
+                    <div class="flex-1">
+                        <div class="text-[13px] font-bold mb-1">고음 발성 교정 (1주차)</div>
+                        <!-- Fake Waveform -->
+                        <div class="flex items-end gap-0.5 h-6 opacity-80">
+                            <div class="w-1 bg-white h-2 rounded-full"></div><div class="w-1 bg-white h-4 rounded-full"></div><div class="w-1 bg-white h-6 rounded-full"></div><div class="w-1 bg-white h-3 rounded-full"></div><div class="w-1 bg-white h-5 rounded-full"></div><div class="w-1 bg-white h-2 rounded-full"></div><div class="w-1 bg-white h-6 rounded-full"></div><div class="w-1 bg-brand-500 h-4 rounded-full"></div><div class="w-1 bg-brand-500 h-2 rounded-full"></div><div class="w-1 bg-brand-500 h-1 rounded-full"></div><div class="w-1 bg-brand-500 h-3 rounded-full"></div><div class="w-1 bg-brand-500 h-5 rounded-full"></div><div class="w-1 bg-brand-500 h-2 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <div class="fixed bottom-0 w-full max-w-[400px] bg-white border-t border-gray-100 p-5 pb-8 z-50">
+            <div class="flex items-center gap-3">
+                <button class="w-14 h-14 rounded-2xl bg-surface border border-gray-200 flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors shrink-0">
+                    <i class="fa-regular fa-heart text-2xl"></i>
+                </button>
+                <button class="flex-1 h-14 rounded-2xl bg-brand-500 text-white font-bold text-[16px] shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors flex items-center justify-center gap-2" onclick="location.href='reservation.html'">
+                    20,000원 결제하기
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

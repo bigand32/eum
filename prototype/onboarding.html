@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 온보딩</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#3182f6', 600: '#1b64da' },
+                        surface: '#f9fafb',
+                    },
+                    boxShadow: { 'soft': '0 4px 20px rgba(0, 0, 0, 0.04)' }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #ffffff; min-height: 100vh; position: relative; overflow-x: hidden; }
+        
+        /* Step Transition Animations */
+        .step-container { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease; position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+        .step-exit-left { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+        .step-enter-right { transform: translateX(100%); opacity: 0; pointer-events: none; }
+        .step-active { transform: translateX(0); opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* Custom Radio/Checkbox styling hidden behind label */
+        input[type="radio"]:checked + div, input[type="checkbox"]:checked + div {
+            border-color: #3182f6;
+            background-color: #f0f5ff;
+            color: #3182f6;
+        }
+        input[type="radio"]:checked + div span, input[type="checkbox"]:checked + div span { color: #3182f6; }
+        
+        /* Pulse Animation for final loading screen */
+        @keyframes ripple {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        .ripple-circle {
+            position: absolute; width: 100px; height: 100px; background-color: rgba(49, 130, 246, 0.2);
+            border-radius: 50%; animation: ripple 2s linear infinite;
+        }
+        .ripple-circle:nth-child(2) { animation-delay: 0.6s; }
+        .ripple-circle:nth-child(3) { animation-delay: 1.2s; }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame">
+        
+        <!-- ==========================================
+             STEP 1: 관심 장르 선택
+        =========================================== -->
+        <div id="step-1" class="step-container step-active bg-white flex flex-col pt-12 px-6 pb-8">
+            <div class="flex justify-between items-center mb-6">
+                <button aria-label="뒤로가기" class="text-gray-400 hover:text-gray-800 text-xl"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="text-[14px] font-bold text-brand-500">1 / 3</div>
+            </div>
+
+            <h1 class="text-[24px] font-extrabold text-gray-900 leading-tight mb-2">
+                어떤 <span class="text-brand-500">장르</span>의 코칭을<br>원하시나요?
+            </h1>
+            <p class="text-[14px] text-gray-500 mb-8 font-medium">관심 있는 분야를 알려주시면 딱 맞는 마스터를 추천해 드려요.</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-auto">
+                <label class="cursor-pointer">
+                    <input type="radio" name="genre" class="hidden">
+                    <div class="h-28 rounded-[20px] border border-gray-200 flex flex-col items-center justify-center transition-all duration-200 hover:border-brand-300">
+                        <i class="fa-solid fa-microphone-lines text-2xl mb-3 text-gray-400"></i>
+                        <span class="text-[15px] font-bold text-gray-700">K-POP / 아이돌</span>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="genre" class="hidden">
+                    <div class="h-28 rounded-[20px] border border-gray-200 flex flex-col items-center justify-center transition-all duration-200 hover:border-brand-300">
+                        <i class="fa-solid fa-masks-theater text-2xl mb-3 text-gray-400"></i>
+                        <span class="text-[15px] font-bold text-gray-700">뮤지컬 / 성악</span>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="genre" class="hidden">
+                    <div class="h-28 rounded-[20px] border border-gray-200 flex flex-col items-center justify-center transition-all duration-200 hover:border-brand-300">
+                        <i class="fa-solid fa-guitar text-2xl mb-3 text-gray-400"></i>
+                        <span class="text-[15px] font-bold text-gray-700">발라드 / R&B</span>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="genre" class="hidden">
+                    <div class="h-28 rounded-[20px] border border-gray-200 flex flex-col items-center justify-center transition-all duration-200 hover:border-brand-300">
+                        <i class="fa-solid fa-headphones text-2xl mb-3 text-gray-400"></i>
+                        <span class="text-[15px] font-bold text-gray-700">랩 / 미디작곡</span>
+                    </div>
+                </label>
+            </div>
+
+            <button onclick="nextStep(1)" class="w-full h-[56px] mt-8 bg-brand-500 text-white rounded-[16px] font-bold text-[16px] shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors">
+                다음으로
+            </button>
+        </div>
+
+
+        <!-- ==========================================
+             STEP 2: 현재 고민 / 목표 (다중 선택)
+        =========================================== -->
+        <div id="step-2" class="step-container step-enter-right bg-white flex flex-col pt-12 px-6 pb-8">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="prevStep(2)" class="text-gray-400 hover:text-gray-800 text-xl"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="text-[14px] font-bold text-brand-500">2 / 3</div>
+            </div>
+
+            <h1 class="text-[24px] font-extrabold text-gray-900 leading-tight mb-2">
+                현재 가장 해결하고 싶은<br><span class="text-brand-500">고민</span>은 무엇인가요?
+            </h1>
+            <p class="text-[14px] text-gray-500 mb-8 font-medium">중복 선택이 가능해요.</p>
+
+            <div class="flex flex-col gap-3 mb-auto overflow-y-auto pb-4 no-scrollbar">
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="problem" class="hidden">
+                    <div class="w-full p-4 rounded-[16px] border border-gray-200 flex items-center justify-between transition-all duration-200">
+                        <span class="text-[15px] font-semibold text-gray-700">고음이 시원하게 안 올라가요</span>
+                        <i class="fa-solid fa-check text-gray-300"></i>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="problem" class="hidden">
+                    <div class="w-full p-4 rounded-[16px] border border-gray-200 flex items-center justify-between transition-all duration-200">
+                        <span class="text-[15px] font-semibold text-gray-700">목에 힘이 많이 들어가서 아파요</span>
+                        <i class="fa-solid fa-check text-gray-300"></i>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="problem" class="hidden">
+                    <div class="w-full p-4 rounded-[16px] border border-gray-200 flex items-center justify-between transition-all duration-200">
+                        <span class="text-[15px] font-semibold text-gray-700">호흡이 짧고 소리가 흔들려요</span>
+                        <i class="fa-solid fa-check text-gray-300"></i>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="problem" class="hidden">
+                    <div class="w-full p-4 rounded-[16px] border border-gray-200 flex items-center justify-between transition-all duration-200">
+                        <span class="text-[15px] font-semibold text-gray-700">나만의 유니크한 톤을 찾고 싶어요</span>
+                        <i class="fa-solid fa-check text-gray-300"></i>
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="problem" class="hidden">
+                    <div class="w-full p-4 rounded-[16px] border border-gray-200 flex items-center justify-between transition-all duration-200">
+                        <span class="text-[15px] font-semibold text-gray-700">실용음악과 입시/오디션 준비 중이에요</span>
+                        <i class="fa-solid fa-check text-gray-300"></i>
+                    </div>
+                </label>
+            </div>
+
+            <button onclick="nextStep(2)" class="w-full h-[56px] mt-4 bg-brand-500 text-white rounded-[16px] font-bold text-[16px] shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors shrink-0">
+                다음으로
+            </button>
+        </div>
+
+
+        <!-- ==========================================
+             STEP 3: 선호하는 코칭 스타일
+        =========================================== -->
+        <div id="step-3" class="step-container step-enter-right bg-white flex flex-col pt-12 px-6 pb-8">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="prevStep(3)" class="text-gray-400 hover:text-gray-800 text-xl"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="text-[14px] font-bold text-brand-500">3 / 3</div>
+            </div>
+
+            <h1 class="text-[24px] font-extrabold text-gray-900 leading-tight mb-8">
+                선호하는 <span class="text-brand-500">코칭 스타일</span>을<br>알려주세요.
+            </h1>
+
+            <div class="flex flex-col gap-4 mb-auto">
+                <label class="cursor-pointer group">
+                    <input type="radio" name="style" class="hidden">
+                    <div class="w-full p-5 rounded-[20px] border border-gray-200 flex gap-4 items-start transition-all duration-200 group-hover:border-brand-300">
+                        <div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-gray-500 shrink-0 mt-0.5"><i class="fa-solid fa-bolt text-lg"></i></div>
+                        <div>
+                            <div class="text-[16px] font-bold text-gray-900 mb-1">스파르타 팩폭형</div>
+                            <p class="text-[13px] text-gray-500 font-medium leading-snug">단점을 정확하고 예리하게 짚어주는 빠른 성장을 원해요.</p>
+                        </div>
+                    </div>
+                </label>
+                
+                <label class="cursor-pointer group">
+                    <input type="radio" name="style" class="hidden">
+                    <div class="w-full p-5 rounded-[20px] border border-gray-200 flex gap-4 items-start transition-all duration-200 group-hover:border-brand-300">
+                        <div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-gray-500 shrink-0 mt-0.5"><i class="fa-solid fa-hand-holding-heart text-lg"></i></div>
+                        <div>
+                            <div class="text-[16px] font-bold text-gray-900 mb-1">칭찬 요정형</div>
+                            <p class="text-[13px] text-gray-500 font-medium leading-snug">장점을 살려주고 세심하고 따뜻하게 멘탈까지 케어받고 싶어요.</p>
+                        </div>
+                    </div>
+                </label>
+                
+                <label class="cursor-pointer group">
+                    <input type="radio" name="style" class="hidden">
+                    <div class="w-full p-5 rounded-[20px] border border-gray-200 flex gap-4 items-start transition-all duration-200 group-hover:border-brand-300">
+                        <div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-gray-500 shrink-0 mt-0.5"><i class="fa-solid fa-flask text-lg"></i></div>
+                        <div>
+                            <div class="text-[16px] font-bold text-gray-900 mb-1">논리적 분석형</div>
+                            <p class="text-[13px] text-gray-500 font-medium leading-snug">해부학적 발성 원리와 구조를 체계적으로 이해하고 싶어요.</p>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <button onclick="finishOnboarding()" class="w-full h-[56px] mt-8 bg-brand-500 text-white rounded-[16px] font-bold text-[16px] shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors">
+                맞춤 마스터 찾기
+            </button>
+        </div>
+
+
+        <!-- ==========================================
+             STEP 4: 로딩 화면 (매칭 중)
+        =========================================== -->
+        <div id="step-4" class="step-container step-enter-right bg-white flex flex-col items-center justify-center px-6">
+            <h1 class="text-[22px] font-extrabold text-gray-900 leading-snug text-center mb-16 z-20">
+                잠시만 기다려주세요<br>
+                나에게 딱 맞는 <span class="text-brand-500">마스터</span>를<br>
+                매칭 중입니다!
+            </h1>
+            
+            <div class="relative flex items-center justify-center w-32 h-32 z-10 mb-20">
+                <!-- Ripple Effects -->
+                <div class="ripple-circle"></div>
+                <div class="ripple-circle"></div>
+                <div class="ripple-circle"></div>
+                <!-- Core Circle -->
+                <div class="w-20 h-20 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/40 z-20">
+                    <i class="fa-solid fa-music text-white text-3xl"></i>
+                </div>
+            </div>
+            
+            <p class="text-[13px] text-gray-400 font-medium z-20">거의 다 찾았어요...</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Custom checkmark toggling for checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const icon = e.target.nextElementSibling.querySelector('.fa-check');
+                if(e.target.checked) {
+                    icon.classList.remove('text-gray-300');
+                    icon.classList.add('text-brand-500');
+                } else {
+                    icon.classList.add('text-gray-300');
+                    icon.classList.remove('text-brand-500');
+                }
+            });
+        });
+
+        // Step navigation logic
+        function nextStep(currentStep) {
+            const current = document.getElementById(`step-${currentStep}`);
+            const next = document.getElementById(`step-${currentStep + 1}`);
+            
+            current.classList.remove('step-active');
+            current.classList.add('step-exit-left');
+            
+            next.classList.remove('step-enter-right');
+            next.classList.add('step-active');
+        }
+
+        function prevStep(currentStep) {
+            const current = document.getElementById(`step-${currentStep}`);
+            const prev = document.getElementById(`step-${currentStep - 1}`);
+            
+            current.classList.remove('step-active');
+            current.classList.add('step-enter-right'); // Reset position for future entry
+            
+            prev.classList.remove('step-exit-left');
+            prev.classList.add('step-active');
+        }
+
+        function finishOnboarding() {
+            // Show loading animation
+            nextStep(3);
+            
+            // Simulate API call and redirect to Home after 3 seconds
+            setTimeout(() => {
+                // In a real app, this would route to the Home screen (voiceup_home.html)
+                // For this preview, we'll just show an alert and reload
+                document.getElementById('step-4').innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-500 text-4xl mb-6 shadow-sm">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <h1 class="text-[22px] font-extrabold text-gray-900 mb-2">분석 완료!</h1>
+                        <p class="text-[14px] text-gray-500 font-medium">나만의 마스터를 만나러 가볼까요?</p>
+                        <button onclick="location.href='home.html'" class="mt-10 bg-gray-900 text-white px-8 py-3 rounded-full font-bold shadow-md hover:bg-gray-800">
+                            홈으로 이동
+                        </button>
+                    </div>
+                `;
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

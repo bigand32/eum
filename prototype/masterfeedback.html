@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 구간별 피드백 작성</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 500: '#3182f6', 600: '#1b64da' },
+                        master: { 500: '#4f46e5' },
+                        surface: '#f2f4f6',
+                    },
+                    boxShadow: { soft: '0 4px 20px rgba(0,0,0,0.04)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #f8fafc; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.1); }
+        .marker { transform: translateX(-50%); }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+    <div id="app-frame" class="pb-28">
+        <header class="sticky top-0 bg-white/90 backdrop-blur-md z-50 px-5 py-4 flex items-center gap-3 border-b border-gray-100">
+            <button type="button" class="text-gray-800 text-xl" onclick="location.href='masterhome.html'">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="flex-1">
+                <div class="font-bold text-[15px]">구간별 피드백 작성</div>
+                <div class="text-[11px] text-gray-500">김지민 수강생 · 밤양갱 1절</div>
+            </div>
+        </header>
+
+        <main class="px-5 pt-5 flex flex-col gap-5">
+            <!-- 수강생 요청 -->
+            <div class="bg-white rounded-[20px] p-4 border border-gray-100 shadow-soft">
+                <p class="text-[13px] text-gray-600 leading-relaxed">"고음역대 진입할 때 쪼이는 느낌이 아직 나는데 확인 부탁드려요!"</p>
+            </div>
+
+            <!-- 플레이어 -->
+            <div class="bg-white rounded-[20px] p-5 border border-gray-100 shadow-soft">
+                <div class="flex items-center gap-3 mb-4">
+                    <button id="play-btn" type="button" class="w-12 h-12 bg-master-500 text-white rounded-full flex items-center justify-center shrink-0 shadow-sm" onclick="togglePlay()">
+                        <i id="play-icon" class="fa-solid fa-play text-[14px] ml-0.5"></i>
+                    </button>
+                    <div class="flex-1">
+                        <p class="text-[14px] font-bold text-gray-900 mb-1">수강생 녹음본</p>
+                        <p id="time-label" class="text-[12px] text-gray-500 tabular-nums">0:00 / 1:45</p>
+                    </div>
+                </div>
+                <div class="relative h-2 bg-surface rounded-full cursor-pointer mb-1" onclick="seekFromBar(event)">
+                    <div id="progress-bar" class="h-full bg-master-500 rounded-full transition-all duration-150" style="width: 0%"></div>
+                    <div id="marker-layer" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+                <button id="add-comment-btn" type="button" class="w-full mt-4 py-3 rounded-xl border-2 border-dashed border-master-500/40 text-master-500 font-bold text-[14px] hover:bg-indigo-50 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-location-dot"></i>
+                    여기에 코멘트 <span id="add-at-time" class="tabular-nums text-[13px] font-semibold bg-indigo-100 px-2 py-0.5 rounded-md">0:00</span>
+                </button>
+            </div>
+
+            <!-- 코멘트 입력 (추가 시 표시) -->
+            <div id="comment-form" class="hidden bg-indigo-50 border border-indigo-100 rounded-[20px] p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[13px] font-bold text-master-500">
+                        <i class="fa-solid fa-clock mr-1"></i>
+                        <span id="form-time-label" class="tabular-nums">0:00</span> 구간
+                    </span>
+                    <button type="button" id="cancel-form-btn" class="text-gray-400 hover:text-gray-600 text-sm">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <textarea id="comment-input" rows="3" placeholder="이 구간에 대한 피드백을 적어 주세요" class="w-full bg-white border border-gray-200 rounded-xl p-3 text-[14px] outline-none focus:border-master-500 resize-none placeholder-gray-400"></textarea>
+                <button id="save-comment-btn" type="button" class="w-full mt-3 py-3 bg-gray-900 text-white rounded-xl font-bold text-[14px] hover:bg-gray-800 transition">
+                    코멘트 추가
+                </button>
+            </div>
+
+            <!-- 작성된 코멘트 목록 -->
+            <div class="bg-gray-900 rounded-[20px] p-4 shadow-soft">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-[12px] font-bold text-gray-400 tracking-wide">작성한 구간별 코멘트</p>
+                    <span id="comment-count" class="text-[11px] font-bold text-gray-500">0개</span>
+                </div>
+                <div id="comment-list" class="flex flex-col gap-1 min-h-[60px]">
+                    <p id="empty-hint" class="text-[13px] text-gray-500 text-center py-4">재생 중 원하는 위치에서<br>「여기에 코멘트」를 눌러 주세요</p>
+                </div>
+            </div>
+
+            <button id="submit-feedback-btn" type="button" disabled class="w-full py-4 bg-master-500 text-white rounded-xl font-bold text-[15px] shadow-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                피드백 전송하기
+            </button>
+        </main>
+    </div>
+
+    <script>
+        const DURATION = 105;
+        const STORAGE_KEY = 'eum_timestamp_comments';
+        let currentTime = 0;
+        let playing = false;
+        let timer = null;
+        let comments = [];
+        let pendingTime = null;
+
+        function formatTime(s) {
+            const sec = Math.max(0, Math.floor(s));
+            return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+        }
+
+        function updatePlayerUI() {
+            document.getElementById('time-label').textContent = `${formatTime(currentTime)} / ${formatTime(DURATION)}`;
+            document.getElementById('progress-bar').style.width = `${(currentTime / DURATION) * 100}%`;
+            document.getElementById('add-at-time').textContent = formatTime(currentTime);
+        }
+
+        function renderMarkers() {
+            const layer = document.getElementById('marker-layer');
+            layer.innerHTML = comments.map((c) => `
+                <div class="marker absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white shadow" style="left: ${(c.time / DURATION) * 100}%"></div>
+            `).join('');
+        }
+
+        function renderCommentList() {
+            const list = document.getElementById('comment-list');
+            const empty = document.getElementById('empty-hint');
+            const count = document.getElementById('comment-count');
+            const submitBtn = document.getElementById('submit-feedback-btn');
+
+            count.textContent = `${comments.length}개`;
+            submitBtn.disabled = comments.length === 0;
+
+            if (comments.length === 0) {
+                list.innerHTML = '<p id="empty-hint" class="text-[13px] text-gray-500 text-center py-4">재생 중 원하는 위치에서<br>「여기에 코멘트」를 눌러 주세요</p>';
+                return;
+            }
+
+            const sorted = [...comments].sort((a, b) => a.time - b.time);
+            list.innerHTML = sorted.map((c, i) => `
+                <div class="flex items-start gap-3 py-2 group">
+                    <button type="button" onclick="seekTo(${c.time})" class="shrink-0 text-[12px] font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded tabular-nums hover:bg-sky-900 transition">${formatTime(c.time)}</button>
+                    <p class="flex-1 text-[13px] text-gray-300 leading-snug">${escapeHtml(c.text)}</p>
+                    <button type="button" onclick="removeComment(${i})" class="shrink-0 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1" aria-label="삭제">
+                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                    </button>
+                </div>
+            `).join('');
+            renderMarkers();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function seekTo(seconds) {
+            currentTime = Math.min(DURATION, Math.max(0, seconds));
+            updatePlayerUI();
+        }
+
+        function seekFromBar(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / rect.width;
+            currentTime = Math.floor(ratio * DURATION);
+            updatePlayerUI();
+        }
+
+        function togglePlay() {
+            playing = !playing;
+            document.getElementById('play-icon').className = playing
+                ? 'fa-solid fa-pause text-[14px]'
+                : 'fa-solid fa-play text-[14px] ml-0.5';
+            if (playing) {
+                timer = setInterval(() => {
+                    currentTime += 1;
+                    if (currentTime >= DURATION) {
+                        currentTime = DURATION;
+                        togglePlay();
+                    }
+                    updatePlayerUI();
+                }, 1000);
+            } else {
+                clearInterval(timer);
+            }
+        }
+
+        function openCommentForm() {
+            if (playing) togglePlay();
+            pendingTime = currentTime;
+            document.getElementById('form-time-label').textContent = formatTime(pendingTime);
+            document.getElementById('comment-input').value = '';
+            document.getElementById('comment-form').classList.remove('hidden');
+            document.getElementById('comment-input').focus();
+        }
+
+        function closeCommentForm() {
+            pendingTime = null;
+            document.getElementById('comment-form').classList.add('hidden');
+        }
+
+        function saveComment() {
+            const text = document.getElementById('comment-input').value.trim();
+            if (!text || pendingTime === null) return;
+            comments.push({ time: pendingTime, text });
+            closeCommentForm();
+            renderCommentList();
+        }
+
+        function removeComment(sortedIndex) {
+            const sorted = [...comments].sort((a, b) => a.time - b.time);
+            const target = sorted[sortedIndex];
+            comments = comments.filter((c) => c !== target);
+            renderCommentList();
+        }
+
+        document.getElementById('add-comment-btn').addEventListener('click', openCommentForm);
+        document.getElementById('cancel-form-btn').addEventListener('click', closeCommentForm);
+        document.getElementById('save-comment-btn').addEventListener('click', saveComment);
+
+        document.getElementById('submit-feedback-btn').addEventListener('click', () => {
+            const payload = comments.sort((a, b) => a.time - b.time);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            alert(`구간별 피드백 ${payload.length}개를 전송했어요!`);
+            location.href = 'chat.html';
+        });
+
+        updatePlayerUI();
+        renderCommentList();
+    </script>
+</body>
+</html>

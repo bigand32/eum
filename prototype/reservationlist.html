@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 예약 현황</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#3182f6', 600: '#1b64da' },
+                        surface: '#f9fafb',
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.03)',
+                        'float': '0 8px 30px rgba(0, 0, 0, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #f4f5f7; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0, 0, 0, 0.1); overflow-x: hidden; overflow-y: auto; }
+        
+        /* 탭 트랜지션 */
+        .tab-indicator { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame" class="pb-28">
+        
+        <header class="sticky top-0 bg-white/95 backdrop-blur-md z-50 pt-12 pb-0 px-5 border-b border-gray-100">
+            <h1 class="font-extrabold text-[22px] text-gray-900 tracking-tight mb-4">예약 내역</h1>
+
+            <!-- 탭 메뉴 (다가오는 일정 vs 지난 일정) -->
+            <div class="flex relative text-[15px] font-bold">
+                <button id="tab-upcoming" class="flex-1 pb-3 text-brand-500 transition-colors" onclick="switchReservationTab('upcoming')">다가오는 코칭</button>
+                <button id="tab-past" class="flex-1 pb-3 text-gray-400 hover:text-gray-600 transition-colors" onclick="switchReservationTab('past')">지난 코칭</button>
+                <!-- 탭 인디케이터 (파란색 밑줄) -->
+                <div id="res-tab-indicator" class="absolute bottom-0 left-0 w-1/2 h-0.5 bg-brand-500 rounded-t-full tab-indicator"></div>
+            </div>
+        </header>
+
+        <main class="p-5">
+            
+            <div id="upcoming-list" class="flex flex-col gap-4">
+                
+                <!-- 예약 카드 1 (오늘 라이브 코칭 - 밝은 스텝 UI 버전) -->
+                <div class="bg-white rounded-[24px] border border-gray-100 p-5 shadow-float relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-brand-50 text-brand-500 text-[11px] font-bold px-2.5 py-1 rounded-md tracking-wide">라이브 코칭</span>
+                        <a href="teacherdatail.html" class="text-[12px] text-gray-400 font-medium hover:text-gray-600">상세정보</a>
+                    </div>
+                    
+                    <div class="flex items-center gap-3.5 mb-5">
+                        <img src="https://ui-avatars.com/api/?name=김뮤&background=f3f4f6&color=111827" class="w-12 h-12 rounded-full border border-gray-100 object-cover shadow-sm">
+                        <div>
+                            <div class="text-[13px] text-gray-500 font-medium mb-0.5">8월 28일 (금)</div>
+                            <h3 class="text-[16px] font-bold leading-tight text-gray-900 tracking-tight">김뮤직 마스터 1:1 코칭</h3>
+                        </div>
+                    </div>
+
+                    <!-- 상태 스텝 UI -->
+                    <div class="bg-brand-50/50 rounded-[16px] p-4 mb-4 flex flex-col items-center">
+                        <div class="text-[12px] font-bold text-brand-500 mb-3 flex items-center gap-1">
+                            <span class="relative flex h-2 w-2 mr-0.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                            </span>
+                            오후 7시 00분 시작
+                        </div>
+                        
+                        <div class="w-full flex items-center justify-between px-2 relative">
+                            <!-- 배경 라인 -->
+                            <div class="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200 z-0"></div>
+                            <!-- 활성 라인 (진행도) -->
+                            <div class="absolute left-6 right-1/2 top-1/2 -translate-y-1/2 h-0.5 bg-brand-500 z-0"></div>
+                            
+                            <!-- 스텝 아이템들 -->
+                            <div class="flex flex-col items-center gap-1.5 z-10">
+                                <div class="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm"><i class="fa-solid fa-check"></i></div>
+                                <span class="text-[10px] font-bold text-brand-500">예약</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1.5 z-10">
+                                <div class="w-6 h-6 rounded-full bg-white border-2 border-brand-500 text-brand-500 flex items-center justify-center text-[10px] font-bold shadow-sm">2</div>
+                                <span class="text-[10px] font-bold text-brand-500">대기중</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1.5 z-10">
+                                <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-200 text-gray-300 flex items-center justify-center text-[10px] font-bold">3</div>
+                                <span class="text-[10px] font-semibold text-gray-400">코칭완료</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 활성화된 입장 버튼 -->
+                    <button class="w-full bg-brand-500 hover:bg-brand-600 transition-colors text-white text-[15px] font-bold py-3.5 rounded-[14px] shadow-[0_4px_20px_rgba(49,130,246,0.3)] flex items-center justify-center gap-2" onclick="location.href='chat.html'">
+                         코칭 룸 입장하기
+                    </button>
+                    <p class="text-[11px] text-gray-400 text-center mt-2 font-medium">코칭 시작 10분 전부터 입장할 수 있습니다.</p>
+                </div>
+
+                <!-- 예약 카드 2 (비동기 첨삭 대기중) -->
+                <div class="bg-white rounded-[24px] border border-gray-100 p-5 shadow-soft">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-surface text-gray-600 border border-gray-200 text-[10px] font-bold px-2 py-0.5 rounded">음성 피드백</span>
+                            <span class="text-[13px] text-gray-500 font-medium">8월 29일 (토) 마감</span>
+                        </div>
+                        <span class="text-[12px] font-bold text-brand-500 bg-brand-50 px-2 py-1 rounded-md">답변 대기중</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 mb-5">
+                        <img src="https://ui-avatars.com/api/?name=박소&background=f3f4f6&color=111827" class="w-12 h-12 rounded-full border border-gray-100">
+                        <div>
+                            <div class="text-[13px] text-gray-500 font-medium mb-0.5">박소울 마스터</div>
+                            <h3 class="text-[16px] font-bold text-gray-900 leading-tight">고음 발성 교정 피드백</h3>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-surface text-gray-700 hover:bg-gray-100 transition-colors text-[13px] font-bold py-3 rounded-[12px] border border-gray-200 flex items-center justify-center gap-1.5" onclick="location.href='chat.html'">
+                            <i class="fa-regular fa-comment-dots"></i> 내 질문 보기
+                        </button>
+                        <button class="flex-1 bg-white text-gray-500 hover:text-gray-900 transition-colors text-[13px] font-bold py-3 rounded-[12px] border border-gray-200">
+                            일정 취소
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 예약 카드 3 (오프라인 학원 방문 예약) -->
+                <div class="bg-white rounded-[24px] border border-gray-100 p-5 shadow-soft">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-900 text-white text-[10px] font-bold px-2 py-0.5 rounded">방문 상담</span>
+                            <span class="text-[13px] text-gray-500 font-medium">9월 2일 (수) 오후 2:00</span>
+                        </div>
+                        <span class="text-[12px] font-bold text-gray-500">예약 확정</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 mb-5">
+                        <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=200&auto=format&fit=crop" class="w-12 h-12 rounded-[12px] object-cover border border-gray-100">
+                        <div>
+                            <div class="text-[13px] text-brand-500 font-bold mb-0.5">eum 파트너스</div>
+                            <h3 class="text-[16px] font-bold text-gray-900 leading-tight">한음 실용음악학원 강남점</h3>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-surface text-gray-700 hover:bg-gray-100 transition-colors text-[13px] font-bold py-3 rounded-[12px] border border-gray-200 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-map-location-dot"></i> 지도 보기
+                    </button>
+                </div>
+
+            </div>
+
+            <div id="past-list" class="flex flex-col gap-4 hidden">
+                
+                <div class="bg-white rounded-[24px] border border-gray-100 p-5 shadow-soft opacity-70">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-200 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded">음성 피드백</span>
+                            <span class="text-[13px] text-gray-500 font-medium">8월 15일 완료</span>
+                        </div>
+                        <span class="text-[12px] font-bold text-gray-400">코칭 종료</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 mb-5">
+                        <img src="https://ui-avatars.com/api/?name=최랩&background=f3f4f6&color=111827" class="w-12 h-12 rounded-full grayscale border border-gray-100">
+                        <div>
+                            <div class="text-[13px] text-gray-500 font-medium mb-0.5">최랩퍼 마스터</div>
+                            <h3 class="text-[16px] font-bold text-gray-900 leading-tight">랩 메이킹 피드백</h3>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-white text-brand-500 hover:bg-brand-50 transition-colors text-[13px] font-bold py-3 rounded-[12px] border border-brand-200">
+                        리뷰 작성하고 500P 받기
+                    </button>
+                </div>
+
+            </div>
+
+        </main>
+
+        <nav class="fixed bottom-0 w-full max-w-[400px] bg-white/95 backdrop-blur-xl border-t border-gray-100 px-6 py-2 pb-8 z-50 flex justify-between">
+            <a href="home.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-house text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">홈</span>
+            </a>
+            <a href="search.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-magnifying-glass text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">탐색</span>
+            </a>
+            <!-- 예약 탭 활성화 -->
+            <a href="reservationlist.html" class="flex flex-col items-center gap-1.5 w-12 text-brand-500">
+                <i class="fa-solid fa-calendar-check text-[20px]"></i>
+                <span class="text-[10px] font-bold tracking-wide">예약</span>
+            </a>
+            <a href="daliy.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors relative">
+                <i class="fa-solid fa-book-open text-[20px]"></i>
+                <span class="absolute top-0 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                <span class="text-[10px] font-semibold tracking-wide">일지</span>
+            </a>
+            <a href="mypage.html" class="flex flex-col items-center gap-1.5 w-12 text-gray-400 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-user text-[20px]"></i>
+                <span class="text-[10px] font-semibold tracking-wide">마이</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <script>
+        function switchReservationTab(tabType) {
+            const tabUpcoming = document.getElementById('tab-upcoming');
+            const tabPast = document.getElementById('tab-past');
+            const indicator = document.getElementById('res-tab-indicator');
+            
+            const upcomingList = document.getElementById('upcoming-list');
+            const pastList = document.getElementById('past-list');
+
+            if (tabType === 'upcoming') {
+                tabUpcoming.classList.replace('text-gray-400', 'text-brand-500');
+                tabPast.classList.replace('text-brand-500', 'text-gray-400');
+                indicator.style.transform = 'translateX(0)';
+                
+                upcomingList.classList.remove('hidden');
+                upcomingList.classList.add('flex');
+                pastList.classList.remove('flex');
+                pastList.classList.add('hidden');
+                
+            } else if (tabType === 'past') {
+                tabPast.classList.replace('text-gray-400', 'text-brand-500');
+                tabUpcoming.classList.replace('text-brand-500', 'text-gray-400');
+                indicator.style.transform = 'translateX(100%)';
+                
+                pastList.classList.remove('hidden');
+                pastList.classList.add('flex');
+                upcomingList.classList.remove('flex');
+                upcomingList.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

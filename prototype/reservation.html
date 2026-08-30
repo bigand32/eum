@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 예약 및 결제</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#3182f6', 600: '#1b64da' },
+                        surface: '#f9fafb',
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.03)',
+                        'float': '0 8px 30px rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #ffffff; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0, 0, 0, 0.1); overflow-x: hidden; overflow-y: auto; }
+        
+        /* Custom radio styling for time slots */
+        .time-slot input:checked + div { background-color: #3182f6; color: white; border-color: #3182f6; }
+        .date-slot input:checked + div { background-color: #111827; color: white; border-color: #111827; }
+        .date-slot input:checked + div span { color: white; }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame" class="pb-32">
+        
+        <header class="sticky top-0 bg-white/90 backdrop-blur-md z-50 px-5 py-4 flex items-center border-b border-gray-50">
+            <button aria-label="뒤로가기" class="text-gray-800 text-xl w-8 hover:text-brand-500 transition-colors" onclick="location.href='teacherdatail.html'">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="font-bold text-[17px] text-gray-900 flex-1 text-center">
+                일정 예약
+            </div>
+            <div class="w-8"></div> <!-- 균형을 위한 더미 요소 -->
+        </header>
+
+        <main class="flex flex-col">
+            
+            <section class="px-6 py-6 border-b border-surface">
+                <h2 class="text-[14px] font-bold text-gray-500 mb-3">선택한 코칭</h2>
+                <div class="flex items-center gap-4">
+                    <img src="https://ui-avatars.com/api/?name=김뮤&background=f3f4f6&color=111827" class="w-14 h-14 rounded-2xl object-cover border border-gray-100">
+                    <div>
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <span class="text-[13px] font-bold text-gray-900">김뮤직 마스터</span>
+                            <span class="bg-brand-50 text-brand-500 text-[10px] font-bold px-1.5 py-0.5 rounded">PRO</span>
+                        </div>
+                        <h3 class="text-[16px] font-extrabold text-gray-900 leading-tight">1:1 라이브 코칭 (30분)</h3>
+                    </div>
+                </div>
+            </section>
+
+            <section class="px-6 py-8 border-b border-surface">
+                <div class="flex justify-between items-end mb-4">
+                    <h2 class="text-[18px] font-bold text-gray-900 tracking-tight">날짜 선택</h2>
+                    <span class="text-[13px] text-brand-500 font-bold">8월</span>
+                </div>
+                
+                <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-2">
+                    <!-- Date Slots -->
+                    <label class="date-slot cursor-pointer shrink-0">
+                        <input type="radio" name="date" class="hidden" checked>
+                        <div class="w-16 h-20 rounded-[18px] border border-gray-200 flex flex-col items-center justify-center transition-all">
+                            <span class="text-[12px] font-semibold text-gray-400 mb-1 transition-colors">금</span>
+                            <strong class="text-[20px] font-extrabold transition-colors">28</strong>
+                        </div>
+                    </label>
+                    <label class="date-slot cursor-pointer shrink-0">
+                        <input type="radio" name="date" class="hidden">
+                        <div class="w-16 h-20 rounded-[18px] border border-gray-200 flex flex-col items-center justify-center transition-all">
+                            <span class="text-[12px] font-semibold text-gray-400 mb-1 transition-colors">토</span>
+                            <strong class="text-[20px] font-extrabold transition-colors">29</strong>
+                        </div>
+                    </label>
+                    <label class="date-slot cursor-pointer shrink-0 opacity-50">
+                        <input type="radio" name="date" class="hidden" disabled>
+                        <div class="w-16 h-20 rounded-[18px] bg-gray-50 border border-gray-100 flex flex-col items-center justify-center relative">
+                            <span class="text-[12px] font-semibold text-gray-400 mb-1">일</span>
+                            <strong class="text-[20px] font-extrabold text-gray-400">30</strong>
+                            <div class="absolute w-full h-px bg-gray-300 -rotate-45"></div> <!-- 마감 표시 -->
+                        </div>
+                    </label>
+                    <label class="date-slot cursor-pointer shrink-0">
+                        <input type="radio" name="date" class="hidden">
+                        <div class="w-16 h-20 rounded-[18px] border border-gray-200 flex flex-col items-center justify-center transition-all">
+                            <span class="text-[12px] font-semibold text-gray-400 mb-1 transition-colors">월</span>
+                            <strong class="text-[20px] font-extrabold transition-colors">31</strong>
+                        </div>
+                    </label>
+                    <label class="date-slot cursor-pointer shrink-0">
+                        <input type="radio" name="date" class="hidden">
+                        <div class="w-16 h-20 rounded-[18px] border border-gray-200 flex flex-col items-center justify-center transition-all">
+                            <span class="text-[12px] font-semibold text-gray-400 mb-1 transition-colors">화</span>
+                            <strong class="text-[20px] font-extrabold transition-colors">1</strong>
+                        </div>
+                    </label>
+                </div>
+            </section>
+
+            <section class="px-6 py-8 border-b border-surface">
+                <div class="flex justify-between items-end mb-4">
+                    <h2 class="text-[18px] font-bold text-gray-900 tracking-tight">시간 선택</h2>
+                </div>
+                
+                <h3 class="text-[13px] font-bold text-gray-500 mb-3">오후</h3>
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <label class="time-slot cursor-pointer">
+                        <input type="radio" name="time" class="hidden">
+                        <div class="py-3 rounded-[14px] border border-gray-200 text-center text-[15px] font-bold text-gray-700 transition-colors">14:00</div>
+                    </label>
+                    <label class="time-slot cursor-pointer">
+                        <input type="radio" name="time" class="hidden">
+                        <div class="py-3 rounded-[14px] border border-gray-200 text-center text-[15px] font-bold text-gray-700 transition-colors">14:30</div>
+                    </label>
+                    <label class="time-slot cursor-pointer opacity-40">
+                        <input type="radio" name="time" class="hidden" disabled>
+                        <div class="py-3 rounded-[14px] bg-gray-50 border border-gray-100 text-center text-[15px] font-bold text-gray-400">마감</div>
+                    </label>
+                </div>
+
+                <h3 class="text-[13px] font-bold text-gray-500 mb-3">저녁</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="time-slot cursor-pointer">
+                        <input type="radio" name="time" class="hidden" checked>
+                        <div class="py-3 rounded-[14px] border border-gray-200 text-center text-[15px] font-bold text-gray-700 transition-colors">19:00</div>
+                    </label>
+                    <label class="time-slot cursor-pointer">
+                        <input type="radio" name="time" class="hidden">
+                        <div class="py-3 rounded-[14px] border border-gray-200 text-center text-[15px] font-bold text-gray-700 transition-colors">19:30</div>
+                    </label>
+                    <label class="time-slot cursor-pointer">
+                        <input type="radio" name="time" class="hidden">
+                        <div class="py-3 rounded-[14px] border border-gray-200 text-center text-[15px] font-bold text-gray-700 transition-colors">20:00</div>
+                    </label>
+                    <label class="time-slot cursor-pointer">
+                        <input type="radio" name="time" class="hidden">
+                        <div class="py-3 rounded-[14px] border border-gray-200 text-center text-[15px] font-bold text-gray-700 transition-colors">21:00</div>
+                    </label>
+                </div>
+            </section>
+
+            <section class="px-6 py-8 border-b border-surface">
+                <h2 class="text-[18px] font-bold text-gray-900 tracking-tight mb-4">사전 질문 작성 <span class="text-gray-400 font-normal text-[14px]">(선택)</span></h2>
+                <textarea placeholder="마스터에게 미리 물어보고 싶은 고민이나 원하는 코칭 방향을 적어주세요. (예: 고음에서 목이 조이는 느낌이 듭니다.)" class="w-full bg-surface border border-gray-100 rounded-[16px] p-4 text-[14px] text-gray-900 outline-none focus:border-brand-500 transition-colors resize-none h-28 placeholder-gray-400"></textarea>
+            </section>
+
+            <section class="px-6 py-8 bg-surface/50">
+                <h2 class="text-[18px] font-bold text-gray-900 tracking-tight mb-5">결제 금액</h2>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[15px] text-gray-600 font-medium">코칭 금액</span>
+                    <span class="text-[16px] text-gray-900 font-bold">55,000원</span>
+                </div>
+
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-[15px] text-gray-600 font-medium">포인트 사용</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[14px] text-brand-500 font-bold">- 1,200원</span>
+                        <div class="w-10 h-6 bg-brand-500 rounded-full p-1 flex items-center justify-end cursor-pointer">
+                            <div class="w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-px w-full bg-gray-200 mb-4"></div>
+
+                <div class="flex justify-between items-center">
+                    <span class="text-[16px] text-gray-900 font-bold">최종 결제 금액</span>
+                    <span class="text-[22px] text-brand-500 font-extrabold tracking-tight">53,800<span class="text-[16px] font-bold text-gray-900 ml-0.5">원</span></span>
+                </div>
+            </section>
+            
+        </main>
+
+        <div class="fixed bottom-0 w-full max-w-[400px] bg-white border-t border-gray-100 p-5 pb-8 z-50">
+            <button class="w-full h-[56px] rounded-[16px] bg-gray-900 text-white font-bold text-[16px] shadow-float hover:bg-gray-800 transition-colors flex items-center justify-center gap-2" onclick="location.href='reservationlist.html'">
+                53,800원 결제하기
+            </button>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>eum (음) - 마스터 모드</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#3182f6', 600: '#1b64da', 900: '#1e3a8a' },
+                        master: { 50: '#fdf4ff', 500: '#d946ef', 600: '#c026d3' }, // 마스터 전용 포인트 컬러 (퍼플)
+                        surface: '#f4f5f7',
+                        card: '#ffffff',
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.04)',
+                        'float': '0 8px 30px rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #e5e7eb; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        #app-frame { width: 100%; max-width: 400px; background-color: #f8fafc; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0, 0, 0, 0.1); overflow-x: hidden; overflow-y: auto; }
+        
+        /* Custom Header Curve (Tutor App Style) */
+        .header-bg {
+            background-color: #4f46e5; /* 튜터 앱 느낌의 인디고 퍼플 */
+            border-bottom-left-radius: 32px;
+            border-bottom-right-radius: 32px;
+        }
+    </style>
+</head>
+<body class="text-gray-900 font-sans antialiased">
+
+    <div id="app-frame" class="pb-28">
+        
+        <div class="header-bg pt-12 pb-16 px-6 text-white relative">
+            <header class="flex justify-between items-center mb-6">
+                <div class="font-extrabold text-[22px] tracking-tighter">
+                    eum<span class="text-brand-200">.</span> <span class="text-[12px] font-semibold bg-white/20 px-2 py-0.5 rounded-full ml-1 align-middle">마스터</span>
+                </div>
+                <div class="flex gap-4 text-xl">
+                    <button aria-label="알림" class="relative hover:text-white/80 transition-colors">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="absolute top-0 right-0 w-2 h-2 bg-red-400 rounded-full border border-[#4f46e5]"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div>
+                <p class="text-white/80 text-[13px] font-medium mb-1">2026년 8월 28일 금요일</p>
+                <h1 class="text-[24px] font-bold leading-tight">
+                    김뮤직 마스터님,<br>오늘 <span class="text-yellow-300">3건</span>의 일정이 있어요.
+                </h1>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="absolute -bottom-10 left-6 right-6 bg-white rounded-[20px] p-5 shadow-soft border border-gray-100 flex justify-between items-center">
+                <div class="text-center flex-1 border-r border-gray-100">
+                    <div class="text-[11px] text-gray-400 font-bold mb-1">대기중 피드백</div>
+                    <div class="text-[20px] font-extrabold text-gray-900">2<span class="text-[12px] font-semibold text-gray-500 ml-0.5">건</span></div>
+                </div>
+                <div class="text-center flex-1 border-r border-gray-100">
+                    <div class="text-[11px] text-gray-400 font-bold mb-1">오늘 라이브</div>
+                    <div class="text-[20px] font-extrabold text-gray-900">1<span class="text-[12px] font-semibold text-gray-500 ml-0.5">건</span></div>
+                </div>
+                <div class="text-center flex-1">
+                    <div class="text-[11px] text-[#4f46e5] font-bold mb-1">입금예정</div>
+                    <div class="text-[16px] font-extrabold text-gray-900">8.5<span class="text-[12px] font-semibold text-gray-500 ml-0.5">만</span></div>
+                </div>
+            </div>
+        </div>
+
+        <main class="flex flex-col px-6 pt-16">
+            
+            <section class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[15px] font-bold text-gray-800">오늘의 할 일</h3>
+                    <button class="text-[12px] text-gray-400 font-medium hover:text-gray-600 transition-colors"><i class="fa-solid fa-list-check mr-1"></i>전체보기</button>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    
+                    <!-- Task 1 (Urgent Feedback) -->
+                    <div class="bg-white rounded-[16px] p-5 shadow-soft border border-gray-100 flex gap-4 items-start group hover:border-gray-200 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-microphone-lines"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[15px] font-bold text-gray-900">김지민 수강생</span>
+                                <span class="text-[11px] font-bold text-red-500 flex items-center gap-1"><i class="fa-regular fa-clock"></i> 2시간 남음</span>
+                            </div>
+                            <p class="text-[13px] text-gray-500 font-medium mb-4">고음 진입 시 목이 조이는 느낌 점검</p>
+                            
+                            <div class="flex gap-2">
+                                <button type="button" class="h-[36px] px-4 rounded-lg bg-surface border border-gray-100 text-[13px] font-bold text-gray-600 hover:bg-gray-100 transition" onclick="location.href='masterfeedback.html'">
+                                    음원 듣기
+                                </button>
+                                <button type="button" class="flex-1 h-[36px] rounded-lg bg-gray-900 text-white text-[13px] font-bold hover:bg-gray-800 transition" onclick="location.href='masterfeedback.html'">
+                                    구간별 피드백 작성
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Task 2 (Live Coaching) -->
+                    <div class="bg-white rounded-[16px] p-5 shadow-soft border border-gray-100 flex gap-4 items-start group hover:border-gray-200 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 text-[#4f46e5] flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-video"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[15px] font-bold text-gray-900">이수진 수강생</span>
+                                <span class="text-[13px] font-bold text-[#4f46e5]">19:30</span>
+                            </div>
+                            <p class="text-[13px] text-gray-500 font-medium mb-4">뮤지컬 입시반 1:1 화상 코칭 (30분)</p>
+                            
+                            <div class="flex gap-2">
+                                <button class="flex-1 h-[36px] rounded-lg bg-[#4f46e5] text-white text-[13px] font-bold hover:bg-indigo-700 transition shadow-sm">
+                                    코칭 룸 입장
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Task 3 (Normal Feedback) -->
+                    <div class="bg-white rounded-[16px] p-5 shadow-soft border border-gray-100 flex gap-4 items-start group hover:border-gray-200 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-microphone-lines"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[15px] font-bold text-gray-900">박민수 수강생</span>
+                                <span class="text-[12px] font-medium text-gray-400">내일 14:00 마감</span>
+                            </div>
+                            <p class="text-[13px] text-gray-500 font-medium mb-4">랩 메이킹 플로우 피드백 요청</p>
+                            
+                            <button class="w-full h-[36px] rounded-lg bg-white border border-gray-200 text-gray-700 text-[13px] font-bold hover:bg-gray-50 transition">
+                                확인하기
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <nav class="fixed bottom-0 w-full max-w-[400px] bg-white/95 backdrop-blur-md border-t border-gray-100 px-6 py-2 pb-8 z-50 flex justify-between">
+            <a href="masterhome.html" class="flex flex-col items-center gap-1 w-16 text-[#4f46e5]">
+                <i class="fa-solid fa-check-square text-[20px] mb-0.5"></i>
+                <span class="text-[10px] font-bold">할일</span>
+            </a>
+            <a href="daliy.html" class="flex flex-col items-center gap-1 w-16 text-gray-400 hover:text-gray-900 transition">
+                <i class="fa-regular fa-calendar text-[20px] mb-0.5"></i>
+                <span class="text-[10px] font-semibold">일정</span>
+            </a>
+            <a href="dashboard.html" class="flex flex-col items-center gap-1 w-16 text-gray-400 hover:text-gray-900 transition">
+                <i class="fa-solid fa-wallet text-[20px] mb-0.5"></i>
+                <span class="text-[10px] font-semibold">정산</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center gap-1 w-16 text-gray-400 hover:text-gray-900 transition">
+                <i class="fa-regular fa-user text-[20px] mb-0.5"></i>
+                <span class="text-[10px] font-semibold">설정</span>
+            </a>
+        </nav>
+
+    </div>
+
+</body>
+</html>
