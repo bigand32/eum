@@ -19,7 +19,7 @@ export function formatMediaDuration(durationSec: number) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function isVideoFile(file: File) {
+export function isVideoFile(file: File) {
   if (file.type.startsWith("video") || file.type === "video/quicktime") return true;
   return /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name);
 }
@@ -29,37 +29,41 @@ function readMediaDuration(el: HTMLMediaElement) {
   return Number.isFinite(duration) && duration > 0 ? duration : null;
 }
 
-export async function getMediaDuration(file: File): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const isVideo = isVideoFile(file);
-    const el = document.createElement(isVideo ? "video" : "audio");
-    el.preload = "auto";
-    if (isVideo) {
-      const video = el as HTMLVideoElement;
-      video.playsInline = true;
-      video.muted = true;
-    }
+function mountMediaElement(isVideo: boolean) {
+  const el = document.createElement(isVideo ? "video" : "audio");
+  el.preload = "auto";
+  el.style.cssText =
+    "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none";
+  if (isVideo) {
+    const video = el as HTMLVideoElement;
+    video.playsInline = true;
+    video.muted = true;
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+  }
+  document.body.appendChild(el);
+  return el;
+}
 
+function unmountMediaElement(el: HTMLMediaElement, url: string) {
+  el.pause();
+  el.removeAttribute("src");
+  el.load();
+  el.remove();
+  URL.revokeObjectURL(url);
+}
+
+function waitForMediaDuration(el: HTMLMediaElement, url: string, timeoutMs: number) {
+  return new Promise<number>((resolve, reject) => {
     let settled = false;
-    const timeoutId = window.setTimeout(() => finish(null), 12_000);
-
-    const cleanup = () => {
-      window.clearTimeout(timeoutId);
-      URL.revokeObjectURL(url);
-      el.removeAttribute("src");
-      el.load();
-    };
 
     const finish = (duration: number | null) => {
       if (settled) return;
       settled = true;
-      cleanup();
-      if (duration && duration > 0) {
-        resolve(duration);
-        return;
-      }
-      reject(new Error("duration"));
+      window.clearTimeout(timeoutId);
+      unmountMediaElement(el, url);
+      if (duration && duration > 0) resolve(duration);
+      else reject(new Error("duration"));
     };
 
     const tryFinish = () => {
@@ -67,33 +71,31 @@ export async function getMediaDuration(file: File): Promise<number> {
       if (duration) finish(duration);
     };
 
-    const trySeekDuration = () => {
-      if (readMediaDuration(el)) {
-        tryFinish();
-        return;
-      }
+    const timeoutId = window.setTimeout(() => finish(null), timeoutMs);
+
+    el.addEventListener("loadedmetadata", () => {
+      tryFinish();
       if (el.duration === Infinity || Number.isNaN(el.duration)) {
-        const onSeeked = () => {
-          el.removeEventListener("seeked", onSeeked);
-          const duration = readMediaDuration(el);
-          if (duration) finish(duration);
-        };
-        el.addEventListener("seeked", onSeeked);
         try {
-          el.currentTime = Number.MAX_SAFE_INTEGER;
+          el.currentTime = 1e10;
         } catch {
           finish(null);
         }
       }
-    };
-
-    el.addEventListener("loadedmetadata", tryFinish);
+    });
     el.addEventListener("durationchange", tryFinish);
-    el.addEventListener("canplaythrough", tryFinish);
+    el.addEventListener("canplay", tryFinish);
+    el.addEventListener("seeked", tryFinish);
     el.addEventListener("error", () => finish(null));
 
     el.src = url;
     el.load();
-    trySeekDuration();
   });
+}
+
+export async function getMediaDuration(file: File): Promise<number> {
+  const url = URL.createObjectURL(file);
+  const isVideo = isVideoFile(file);
+  const el = mountMediaElement(isVideo);
+  return waitForMediaDuration(el, url, isVideo ? 15_000 : 10_000);
 }

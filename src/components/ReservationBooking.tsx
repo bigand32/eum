@@ -4,10 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { saveReservation } from "@/lib/db/api";
 import { useDb } from "@/lib/db/use-db";
-import { formatPrice } from "@/lib/db/schema";
 import { useStudentId } from "@/lib/auth/use-student-id";
-import { processFakePayment } from "@/lib/payment/fake-payment";
-import { FakePaymentSheet, MvpPaymentNotice } from "@/components/FakePaymentSheet";
 import {
   buildScheduledAt,
   getBookingDateOptions,
@@ -15,18 +12,13 @@ import {
   pickFirstAvailableDate,
   pickFirstAvailableTime,
 } from "@/lib/booking-slots";
-import {
-  getPhonePrice,
-  PHONE_DURATIONS,
-  type PhoneDurationMin,
-} from "@/lib/phone-pricing";
+import { PHONE_DURATIONS, type PhoneDurationMin } from "@/lib/phone-pricing";
 
 export function ReservationBooking({ masterId }: { masterId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const db = useDb();
   const studentId = useStudentId();
-  const [paymentOpen, setPaymentOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const master = db.masters.find((m) => m.id === masterId);
   const type = searchParams.get("type") === "visit" ? "visit" : "phone";
@@ -34,10 +26,6 @@ export function ReservationBooking({ masterId }: { masterId: string }) {
   const pricing = master?.pricing;
   const [phoneDuration, setPhoneDuration] = useState<PhoneDurationMin>(30);
 
-  const price =
-    type === "phone" && pricing
-      ? getPhonePrice(pricing, phoneDuration)
-      : (pricing?.visitPrice ?? 0);
   const duration =
     type === "phone" ? phoneDuration : (pricing?.visitDurationMin ?? 60);
   const title = type === "phone" ? "전화 상담" : "방문 상담";
@@ -73,26 +61,19 @@ export function ReservationBooking({ masterId }: { masterId: string }) {
     [selectedDateKey, selectedTime],
   );
 
-  const handlePay = () => {
-    if (!master) return;
-    setPaymentOpen(true);
-  };
-
-  const confirmPay = async () => {
+  const handleBook = async () => {
     if (!master) return;
     setSubmitting(true);
     try {
-      await processFakePayment(price);
       await saveReservation({
         studentId,
         masterId: master.id,
         type,
-        priceAtPurchase: price,
+        priceAtPurchase: 0,
         durationMin: type === "phone" ? phoneDuration : pricing?.visitDurationMin,
         scheduledAt,
         preQuestion: preQuestion || undefined,
       });
-      setPaymentOpen(false);
       router.push("/reservation?booked=1");
     } finally {
       setSubmitting(false);
@@ -126,7 +107,6 @@ export function ReservationBooking({ masterId }: { masterId: string }) {
             <h2 className="mb-4 text-[18px] font-bold tracking-tight text-gray-900">상담 시간</h2>
             <div className="grid grid-cols-2 gap-3">
               {PHONE_DURATIONS.map((min) => {
-                const optionPrice = getPhonePrice(pricing, min);
                 const selected = phoneDuration === min;
                 return (
                   <button
@@ -140,18 +120,11 @@ export function ReservationBooking({ masterId }: { masterId: string }) {
                     }`}
                   >
                     <div
-                      className={`mb-1 text-[16px] font-extrabold ${
+                      className={`text-[16px] font-extrabold ${
                         selected ? "text-brand-600" : "text-gray-900"
                       }`}
                     >
                       {min}분
-                    </div>
-                    <div
-                      className={`text-[14px] font-bold ${
-                        selected ? "text-brand-500" : "text-gray-500"
-                      }`}
-                    >
-                      {formatPrice(optionPrice)}원
                     </div>
                   </button>
                 );
@@ -211,7 +184,7 @@ export function ReservationBooking({ masterId }: { masterId: string }) {
           </div>
         </section>
 
-        <section className="border-b border-surface px-6 py-8">
+        <section className="px-6 py-8">
           <h2 className="mb-4 text-[18px] font-bold tracking-tight text-gray-900">
             사전 질문 <span className="text-[14px] font-normal text-gray-400">(선택)</span>
           </h2>
@@ -223,39 +196,18 @@ export function ReservationBooking({ masterId }: { masterId: string }) {
             className="h-28 w-full resize-none rounded-[16px] border border-gray-100 bg-surface p-4 text-[14px] outline-none focus:border-brand-500"
           />
         </section>
-
-        <section className="bg-surface/50 px-6 py-8">
-          <div className="flex justify-between">
-            <span className="text-[16px] font-bold text-gray-900">최종 결제 금액</span>
-            <span className="text-[22px] font-extrabold text-brand-500">
-              {formatPrice(price)}원
-            </span>
-          </div>
-          <div className="mt-3">
-            <MvpPaymentNotice />
-          </div>
-        </section>
       </main>
 
       <div className="mt-auto border-t border-gray-100 bg-white p-5 pb-8">
         <button
           type="button"
-          onClick={handlePay}
+          onClick={() => void handleBook()}
           disabled={submitting || timeOptions.every((t) => t.disabled)}
           className="shadow-float h-14 w-full rounded-[16px] bg-gray-900 text-[16px] font-bold text-white hover:bg-gray-800 disabled:opacity-50"
         >
-          {submitting ? "처리 중..." : `${formatPrice(price)}원 테스트 결제`}
+          {submitting ? "예약 중..." : "예약하기"}
         </button>
       </div>
-
-      <FakePaymentSheet
-        open={paymentOpen}
-        productLabel={`${title} (${duration}분)`}
-        amount={price}
-        processing={submitting}
-        onClose={() => setPaymentOpen(false)}
-        onConfirm={() => void confirmPay()}
-      />
     </div>
   );
 }

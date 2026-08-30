@@ -252,12 +252,8 @@ export function SearchView() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-1 flex items-center justify-between border-t border-gray-50 pt-3">
-                  <div className="text-[12px] font-medium text-gray-500">음성 피드백 (1회)</div>
-                  <div className="text-[15px] font-extrabold text-gray-900">
-                    {m.pricing.feedbackPrice.toLocaleString()}
-                    <span className="ml-0.5 text-[13px] font-medium">원~</span>
-                  </div>
+                <div className="mt-1 border-t border-gray-50 pt-3">
+                  <div className="text-[12px] font-medium text-gray-500">음성/영상 피드백 · 전화/방문 상담</div>
                 </div>
               </Link>
             ))
