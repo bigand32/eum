@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { useStudentId } from "@/lib/auth/use-student-id";
-import { savePracticeRecord } from "@/lib/db/api";
-import { uploadPracticeBlob } from "@/lib/feedback-media";
+import { savePracticeRecording, practiceSaveErrorMessage } from "@/lib/practice-recording";
 import { markAttendanceToday } from "@/lib/attendance";
 import { formatTime } from "@/lib/timestamp-comments";
 
@@ -537,20 +536,19 @@ export function RecordModal() {
                       if (!recordedBlob) return;
                       setSaving(true);
                       try {
-                        const userId = session?.id ?? studentId;
                         const durationSec = Math.max(recordedDurationRef.current, elapsedSec, 1);
-                        const mediaUrl = await uploadPracticeBlob(userId, recordedBlob, durationSec);
                         const today = new Date();
-                        await savePracticeRecord({
-                          studentId,
-                          title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
+                        await savePracticeRecording({
+                          authUserId: session?.id,
+                          studentId: session?.studentId ?? studentId,
+                          blob: recordedBlob,
                           durationSec,
-                          mediaUrl,
+                          title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
                         });
                         markAttendanceToday();
                         closeModal();
-                      } catch {
-                        alert("저장에 실패했어요. 다시 시도해 주세요.");
+                      } catch (error) {
+                        alert(practiceSaveErrorMessage(error));
                       } finally {
                         setSaving(false);
                       }

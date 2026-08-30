@@ -13,11 +13,27 @@ function readFileAsDataUrl(file: File): Promise<string> {
 export async function uploadFeedbackMedia(userId: string, file: File): Promise<string> {
   if (isSupabaseConfigured()) {
     const supabase = createClient();
-    const ext = file.name.split(".").pop() ?? "webm";
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      throw new Error("AUTH_REQUIRED");
+    }
+    if (session.user.id !== userId) {
+      throw new Error("AUTH_USER_MISMATCH");
+    }
+
+    const ext =
+      file.name.split(".").pop() ??
+      (file.type.includes("mp4") || file.type.includes("m4a") ? "m4a" : "webm");
     const path = `${userId}/${Date.now()}.${ext}`;
+    const contentType =
+      file.type ||
+      (ext === "m4a" ? "audio/mp4" : ext === "webm" ? "audio/webm" : "application/octet-stream");
+
     const { error } = await supabase.storage.from("feedback-media").upload(path, file, {
-      upsert: true,
-      contentType: file.type || undefined,
+      upsert: false,
+      contentType,
     });
     if (error) throw error;
     const { data } = supabase.storage.from("feedback-media").getPublicUrl(path);
