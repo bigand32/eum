@@ -49,7 +49,10 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
     setLoadingDuration(true);
     selectedFileRef.current = file;
 
-    const type = file.type.startsWith("video") ? "video" : "audio";
+    const type =
+      file.type.startsWith("video") || /\.(mp4|mov|m4v|webm)$/i.test(file.name)
+        ? "video"
+        : "audio";
     setMediaType(type);
     setFileName(file.name);
 
@@ -63,10 +66,14 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
       if (!Number.isFinite(duration) || duration <= 0) {
         throw new Error("invalid");
       }
-      setDurationSec(Math.ceil(duration));
+      setDurationSec(Math.max(1, Math.ceil(duration)));
     } catch {
       setDurationSec(null);
-      setFileError("파일 길이를 확인할 수 없어요. 다른 파일을 선택해 주세요.");
+      setFileError(
+        type === "video"
+          ? "영상 길이를 확인할 수 없어요. iPhone 기본 Safari에서 mp4/mov 파일을 다시 선택해 주세요."
+          : "파일 길이를 확인할 수 없어요. 다른 파일을 선택해 주세요.",
+      );
     } finally {
       setLoadingDuration(false);
     }

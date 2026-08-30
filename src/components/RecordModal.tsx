@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { useStudentId } from "@/lib/auth/use-student-id";
 import { savePracticeRecording, practiceSaveErrorMessage } from "@/lib/practice-recording";
+import { getMediaDuration } from "@/lib/feedback-pricing";
 import { markAttendanceToday } from "@/lib/attendance";
 import { formatTime } from "@/lib/timestamp-comments";
 
@@ -38,17 +39,15 @@ function isRecorderNotSupported() {
   return typeof MediaRecorder === "undefined";
 }
 
-async function requestMicStream(timeoutMs = 12_000): Promise<MediaStream> {
-  if (isMicNotSupported()) {
-    throw new Error("NOT_SUPPORTED");
-  }
+function hasLiveMicStream(stream: MediaStream | null) {
+  return stream?.getAudioTracks().some((track) => track.readyState === "live") ?? false;
+}
 
-  return Promise.race([
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false }),
-    new Promise<MediaStream>((_, reject) => {
-      window.setTimeout(() => reject(new Error("MIC_TIMEOUT")), timeoutMs);
-    }),
-  ]);
+function requestMicStream() {
+  if (isMicNotSupported()) {
+    return Promise.reject(new Error("NOT_SUPPORTED"));
+  }
+  return navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 }
 
 function createMediaRecorder(stream: MediaStream): MediaRecorder {
@@ -57,7 +56,7 @@ function createMediaRecorder(stream: MediaStream): MediaRecorder {
     try {
       return new MediaRecorder(stream, { mimeType });
     } catch {
-      // Safari/iOS fallback
+      // Safari fallback
     }
   }
   return new MediaRecorder(stream);
@@ -67,9 +66,6 @@ function micErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     if (error.message === "NOT_SUPPORTED") {
       return "이 브라우저에서는 녹음을 지원하지 않아요. Safari로 열어 주세요.";
-    }
-    if (error.message === "MIC_TIMEOUT") {
-      return "마이크 연결이 지연되고 있어요. 권한 팝업을 확인하거나 Safari를 새로고침해 주세요.";
     }
     if (error.message === "RECORD_NOT_SUPPORTED") {
       return "이 기기에서는 녹음 형식을 지원하지 않아요.";
@@ -84,8 +80,11 @@ function micErrorMessage(error: unknown): string {
 export function RecordModal() {
   const studentId = useStudentId();
   const { session } = useSession();
+  const isIOS = isIOSDevice();
+  const iosInputRef = useRef<HTMLInputElement>(null);
+
   const [open, setOpen] = useState(false);
-  const [isMonitorOn, setIsMonitorOn] = useState(() => !isIOSDevice());
+  const [isMonitorOn, setIsMonitorOn] = useState(() => !isIOS);
   const [isReverbOn, setIsReverbOn] = useState(false);
   const [isPitchOn, setIsPitchOn] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -174,28 +173,36 @@ export function RecordModal() {
     [isMonitorOn, isReverbOn, isPitchOn],
   );
 
-  const ensureMic = useCallback(async () => {
-    if (micStreamRef.current) return micStreamRef.current;
+  const applyRecordedFile = useCallback(async (file: File) => {
+    setMicLoading(true);
+    setMicError(null);
+    playbackAudioRef.current?.pause();
+    setPlaybackPlaying(false);
 
-    const stream = await requestMicStream();
-    micStreamRef.current = stream;
-
-    if (isMonitorOn && !isIOSDevice()) {
-      const ctx = new AudioContext();
-      if (ctx.state === "suspended") {
-        await ctx.resume();
+    try {
+      let durationSec = 1;
+      try {
+        const duration = await getMediaDuration(file);
+        if (Number.isFinite(duration) && duration > 0) {
+          durationSec = Math.max(1, Math.ceil(duration));
+        }
+      } catch {
+        durationSec = 1;
       }
-      setupMonitorGraph(ctx, stream);
-      audioCtxRef.current = ctx;
-    }
 
-    setMicReady(true);
-    return stream;
-  }, [isMonitorOn, setupMonitorGraph]);
+      setRecordedBlob(file);
+      setElapsedSec(durationSec);
+      recordedDurationRef.current = durationSec;
+    } catch {
+      setMicError("녹음 파일을 불러오지 못했어요. 다시 시도해 주세요.");
+    } finally {
+      setMicLoading(false);
+    }
+  }, []);
 
   const openModal = () => {
-    if (isRecorderNotSupported()) {
-      alert("이 브라우저에서는 녹음을 지원하지 않아요. iPhone 기본 Safari로 열어 주세요.");
+    if (!isIOS && isRecorderNotSupported()) {
+      alert("이 브라우저에서는 녹음을 지원하지 않아요.");
       return;
     }
     setOpen(true);
@@ -207,37 +214,38 @@ export function RecordModal() {
     setMicError(null);
   };
 
-  const startRecording = () => {
-    if (!micStreamRef.current) {
-      throw new Error("MIC_NOT_READY");
-    }
+  const startRecording = useCallback(
+    (stream: MediaStream) => {
+      playbackAudioRef.current?.pause();
+      setPlaybackPlaying(false);
+      setRecordedBlob(null);
+      setMicError(null);
+      chunksRef.current = [];
 
-    playbackAudioRef.current?.pause();
-    setPlaybackPlaying(false);
-    setRecordedBlob(null);
-    setMicError(null);
-    chunksRef.current = [];
+      let recorder: MediaRecorder;
+      try {
+        recorder = createMediaRecorder(stream);
+      } catch {
+        throw new Error("RECORD_NOT_SUPPORTED");
+      }
 
-    let recorder: MediaRecorder;
-    try {
-      recorder = createMediaRecorder(micStreamRef.current);
-    } catch {
-      throw new Error("RECORD_NOT_SUPPORTED");
-    }
+      recorderMimeRef.current = recorder.mimeType || getRecorderMimeType();
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
 
-    recorderMimeRef.current = recorder.mimeType || getRecorderMimeType();
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-
-    recorder.start(isIOSDevice() ? undefined : 250);
-    mediaRecorderRef.current = recorder;
-    setIsRecording(true);
-    recordingStartedAtRef.current = Date.now();
-    recordedDurationRef.current = 0;
-    syncElapsed();
-    timerRef.current = setInterval(syncElapsed, 250);
-  };
+      recorder.start(250);
+      mediaRecorderRef.current = recorder;
+      micStreamRef.current = stream;
+      setMicReady(true);
+      setIsRecording(true);
+      recordingStartedAtRef.current = Date.now();
+      recordedDurationRef.current = 0;
+      syncElapsed();
+      timerRef.current = setInterval(syncElapsed, 250);
+    },
+    [syncElapsed],
+  );
 
   const finalizeRecording = useCallback(async () => {
     syncElapsed();
@@ -275,11 +283,9 @@ export function RecordModal() {
       };
 
       try {
-        if (recorder.state === "recording") {
-          recorder.requestData();
-        }
+        if (recorder.state === "recording") recorder.requestData();
       } catch {
-        // Safari/iOS may not support requestData — stop() still flushes on stop.
+        // ignore
       }
 
       try {
@@ -307,30 +313,71 @@ export function RecordModal() {
   };
 
   const handleRecordTap = () => {
+    if (isRecording) {
+      void finalizeRecording();
+      return;
+    }
+    if (isFinalizing || micLoading) return;
+
+    if (!hasLiveMicStream(micStreamRef.current)) {
+      stopMic();
+    }
+
+    const micPromise = hasLiveMicStream(micStreamRef.current)
+      ? Promise.resolve(micStreamRef.current as MediaStream)
+      : requestMicStream();
+
     void (async () => {
-      if (isRecording) {
-        await finalizeRecording();
-        return;
-      }
-
-      if (isFinalizing || micLoading) return;
-
       setMicLoading(true);
       setMicError(null);
       try {
-        await ensureMic();
-        if (audioCtxRef.current?.state === "suspended") {
-          await audioCtxRef.current.resume();
+        const stream = await micPromise;
+
+        if (isMonitorOn && !isIOS) {
+          const ctx = new AudioContext();
+          if (ctx.state === "suspended") await ctx.resume();
+          setupMonitorGraph(ctx, stream);
+          audioCtxRef.current = ctx;
         }
-        startRecording();
+
+        startRecording(stream);
       } catch (error) {
         stopMic();
-        setMicReady(false);
         const message = micErrorMessage(error);
         setMicError(message);
-        alert(message);
       } finally {
         setMicLoading(false);
+      }
+    })();
+  };
+
+  const handleIOSInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    void applyRecordedFile(file);
+  };
+
+  const handleSave = () => {
+    void (async () => {
+      if (!recordedBlob) return;
+      setSaving(true);
+      try {
+        const durationSec = Math.max(recordedDurationRef.current, elapsedSec, 1);
+        const today = new Date();
+        await savePracticeRecording({
+          authUserId: session?.id,
+          studentId: session?.studentId ?? studentId,
+          blob: recordedBlob,
+          durationSec,
+          title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
+        });
+        markAttendanceToday();
+        closeModal();
+      } catch (error) {
+        alert(practiceSaveErrorMessage(error));
+      } finally {
+        setSaving(false);
       }
     })();
   };
@@ -368,8 +415,10 @@ export function RecordModal() {
       )}
 
       {open && (
-        <div className="fixed inset-0 z-[60] mx-auto flex max-w-[400px] flex-col justify-end bg-black/40 backdrop-blur-sm">
-          <div className="shadow-float max-h-[92vh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-5 pb-10 no-scrollbar">
+        <div className="pointer-events-none fixed inset-0 z-[60] mx-auto max-w-[400px]">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end">
+            <div className="pointer-events-auto shadow-float max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-5 pb-10 no-scrollbar">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[18px] font-bold text-gray-900">자유 녹음</h3>
               <button
@@ -381,123 +430,153 @@ export function RecordModal() {
               </button>
             </div>
 
-            <p className="mb-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-500">
-              <i className="fa-solid fa-headphones mt-0.5 shrink-0 text-[11px] text-gray-400" />
-              <span>
-                {isIOSDevice() ? (
-                  <>
-                    <span className="font-semibold text-gray-600">iPhone Safari 제한:</span> 실시간
-                    모니터링은 에어팟이 아니라 <span className="font-semibold">스피커</span>로
-                    나올 수 있어요. 녹음 후 재생 버튼으로 확인해 주세요.
-                  </>
-                ) : (
-                  <>
+            {isIOS ? (
+              <div className="mb-4 space-y-4">
+                <p className="text-[13px] leading-relaxed text-gray-500">
+                  iPhone Safari에서는 앱 안 녹음 대신{" "}
+                  <span className="font-semibold text-gray-700">기본 녹음기</span>를 사용해요.
+                  녹음 후 파일이 아래에 나타납니다.
+                </p>
+                <input
+                  ref={iosInputRef}
+                  type="file"
+                  accept="audio/*"
+                  capture
+                  className="hidden"
+                  onChange={handleIOSInputChange}
+                />
+                <button
+                  type="button"
+                  disabled={micLoading || saving}
+                  onClick={() => iosInputRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-4 text-[16px] font-bold text-white hover:bg-red-600 disabled:opacity-60"
+                >
+                  <i className="fa-solid fa-microphone" />
+                  {micLoading ? "불러오는 중..." : "iPhone으로 녹음하기"}
+                </button>
+                <button
+                  type="button"
+                  disabled={micLoading || saving}
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "audio/*";
+                    input.onchange = () => {
+                      const file = input.files?.[0];
+                      if (file) void applyRecordedFile(file);
+                    };
+                    input.click();
+                  }}
+                  className="w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600"
+                >
+                  녹음 파일 선택하기
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="mb-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-500">
+                  <i className="fa-solid fa-headphones mt-0.5 shrink-0 text-[11px] text-gray-400" />
+                  <span>
                     <span className="font-semibold text-gray-600">이어폰 사용을 권장해요.</span>{" "}
                     스피커로 모니터링하면 하울링이 날 수 있어요.
-                  </>
-                )}
-              </span>
-            </p>
-
-            <div className="flex items-center justify-between border-b border-gray-100 py-3">
-              <div>
-                <p className="text-[14px] font-bold text-gray-900">실시간 모니터링</p>
-                <p className="mt-0.5 text-[12px] text-gray-500">
-                  {isIOSDevice()
-                    ? "iPhone 웹에서는 지원되지 않아요"
-                    : "말하는 동시에 내 목소리 들리기"}
+                  </span>
                 </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isMonitorOn}
-                disabled={isIOSDevice()}
-                onClick={() => setIsMonitorOn((v) => !v)}
-                className={`toggle-track relative h-7 w-12 shrink-0 rounded-full disabled:opacity-40 ${isMonitorOn ? "is-on bg-brand-500" : "bg-gray-200"}`}
-              >
-                <span className="toggle-knob absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform" />
-              </button>
-            </div>
 
-            <div className="mb-4 border-b border-gray-100 py-3">
-              <p className="mb-3 text-[12px] font-bold tracking-wide text-gray-400">이펙트 (선택)</p>
-              <div className="flex gap-2">
-                {[
-                  { label: "리버브", icon: "fa-water", on: isReverbOn, set: setIsReverbOn },
-                  { label: "피치 보정", icon: "fa-music", on: isPitchOn, set: setIsPitchOn },
-                ].map((fx) => (
+                <div className="flex items-center justify-between border-b border-gray-100 py-3">
+                  <div>
+                    <p className="text-[14px] font-bold text-gray-900">실시간 모니터링</p>
+                    <p className="mt-0.5 text-[12px] text-gray-500">말하는 동시에 내 목소리 들리기</p>
+                  </div>
                   <button
-                    key={fx.label}
                     type="button"
-                    onClick={() => fx.set((v) => !v)}
-                    className={`flex-1 rounded-xl border py-2.5 text-[13px] font-semibold transition ${
-                      fx.on
-                        ? "border-brand-500 bg-brand-50 text-brand-600"
-                        : "border-gray-200 bg-white text-gray-600"
+                    role="switch"
+                    aria-checked={isMonitorOn}
+                    onClick={() => setIsMonitorOn((v) => !v)}
+                    className={`toggle-track relative h-7 w-12 shrink-0 rounded-full ${isMonitorOn ? "is-on bg-brand-500" : "bg-gray-200"}`}
+                  >
+                    <span className="toggle-knob absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform" />
+                  </button>
+                </div>
+
+                <div className="mb-4 border-b border-gray-100 py-3">
+                  <p className="mb-3 text-[12px] font-bold tracking-wide text-gray-400">이펙트 (선택)</p>
+                  <div className="flex gap-2">
+                    {[
+                      { label: "리버브", icon: "fa-water", on: isReverbOn, set: setIsReverbOn },
+                      { label: "피치 보정", icon: "fa-music", on: isPitchOn, set: setIsPitchOn },
+                    ].map((fx) => (
+                      <button
+                        key={fx.label}
+                        type="button"
+                        onClick={() => fx.set((v) => !v)}
+                        className={`flex-1 rounded-xl border py-2.5 text-[13px] font-semibold transition ${
+                          fx.on
+                            ? "border-brand-500 bg-brand-50 text-brand-600"
+                            : "border-gray-200 bg-white text-gray-600"
+                        }`}
+                      >
+                        <i className={`fa-solid ${fx.icon} mr-1`} />
+                        {fx.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-2 flex flex-col items-center py-4">
+                  <div className="mb-3 flex h-5 items-center gap-2">
+                    {isRecording ? (
+                      <>
+                        <span className="rec-dot h-2 w-2 rounded-full bg-red-500" />
+                        <span className="text-[13px] font-bold text-red-500">녹음 중</span>
+                      </>
+                    ) : isFinalizing ? (
+                      <span className="text-[13px] font-medium text-gray-400">녹음 파일 만드는 중...</span>
+                    ) : (
+                      <span className="text-[13px] font-medium text-gray-400">
+                        {micLoading
+                          ? "마이크 연결 중..."
+                          : recordedBlob
+                            ? "녹음 완료"
+                            : micReady
+                              ? "녹음 준비됨"
+                              : "빨간 버튼을 눌러 녹음 시작"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-4 text-[36px] font-extrabold tracking-tight text-gray-900 tabular-nums">
+                    {formatTime(elapsedSec)}
+                  </div>
+                  <div
+                    className={`mb-5 flex h-10 items-end justify-center gap-[3px] ${isRecording ? "" : "opacity-30"}`}
+                  >
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="wave-bar w-[3px] rounded-full bg-brand-500"
+                        style={{ height: "100%", animationDelay: `${i * 0.1}s` }}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={micLoading || isFinalizing}
+                    onClick={handleRecordTap}
+                    className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl text-white shadow-[0_8px_24px_rgba(239,68,68,0.35)] disabled:opacity-60 ${
+                      isRecording ? "bg-gray-900" : "bg-red-500 hover:bg-red-600"
                     }`}
                   >
-                    <i className={`fa-solid ${fx.icon} mr-1`} />
-                    {fx.label}
+                    <i className={`fa-solid ${isRecording ? "fa-stop" : "fa-microphone"}`} />
                   </button>
-                ))}
-              </div>
-            </div>
+                  <p className="mt-3 text-center text-[12px] text-gray-400">
+                    {isRecording ? "탭하여 녹음 중지" : "탭하여 녹음 시작"}
+                  </p>
+                </div>
+              </>
+            )}
 
-            <div className="mb-2 flex flex-col items-center py-4">
-              <div className="mb-3 flex h-5 items-center gap-2">
-                {isRecording ? (
-                  <>
-                    <span className="rec-dot h-2 w-2 rounded-full bg-red-500" />
-                    <span className="text-[13px] font-bold text-red-500">녹음 중</span>
-                  </>
-                ) : isFinalizing ? (
-                  <span className="text-[13px] font-medium text-gray-400">녹음 파일 만드는 중...</span>
-                ) : (
-                  <span className="text-[13px] font-medium text-gray-400">
-                    {micLoading
-                      ? "마이크 연결 중..."
-                      : recordedBlob
-                        ? "녹음 완료"
-                        : micReady
-                          ? "녹음 준비됨"
-                          : "빨간 버튼을 눌러 녹음 시작"}
-                  </span>
-                )}
-              </div>
-              <div className="mb-4 text-[36px] font-extrabold tracking-tight text-gray-900 tabular-nums">
-                {formatTime(elapsedSec)}
-              </div>
-              <div
-                className={`mb-5 flex h-10 items-end justify-center gap-[3px] ${isRecording ? "" : "opacity-30"}`}
-              >
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="wave-bar w-[3px] rounded-full bg-brand-500"
-                    style={{ height: "100%", animationDelay: `${i * 0.1}s` }}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                disabled={micLoading || isFinalizing}
-                onClick={handleRecordTap}
-                className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl text-white shadow-[0_8px_24px_rgba(239,68,68,0.35)] disabled:opacity-60 ${
-                  isRecording ? "bg-gray-900" : "bg-red-500 hover:bg-red-600"
-                }`}
-              >
-                <i className={`fa-solid ${isRecording ? "fa-stop" : "fa-microphone"}`} />
-              </button>
-              <p className="mt-3 text-center text-[12px] text-gray-400">
-                {isRecording ? "탭하여 녹음 중지" : "탭하여 녹음 시작"}
-              </p>
-              {micError && (
-                <p className="mt-2 px-2 text-center text-[12px] font-medium text-red-500">
-                  {micError}
-                </p>
-              )}
-            </div>
+            {micError && (
+              <p className="mb-3 px-2 text-center text-[12px] font-medium text-red-500">{micError}</p>
+            )}
 
             {recordedBlob && recordedBlob.size > 0 && (
               <div>
@@ -531,35 +610,14 @@ export function RecordModal() {
                 <button
                   type="button"
                   disabled={saving}
-                  onClick={() => {
-                    void (async () => {
-                      if (!recordedBlob) return;
-                      setSaving(true);
-                      try {
-                        const durationSec = Math.max(recordedDurationRef.current, elapsedSec, 1);
-                        const today = new Date();
-                        await savePracticeRecording({
-                          authUserId: session?.id,
-                          studentId: session?.studentId ?? studentId,
-                          blob: recordedBlob,
-                          durationSec,
-                          title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
-                        });
-                        markAttendanceToday();
-                        closeModal();
-                      } catch (error) {
-                        alert(practiceSaveErrorMessage(error));
-                      } finally {
-                        setSaving(false);
-                      }
-                    })();
-                  }}
+                  onClick={handleSave}
                   className="w-full rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-600 disabled:opacity-50"
                 >
                   {saving ? "저장 중..." : "일지에 저장하기 (+300P)"}
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}

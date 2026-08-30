@@ -27,7 +27,7 @@ export function BottomNav() {
   if (hideNav) return null;
 
   return (
-    <nav className="fixed bottom-0 z-50 flex w-full max-w-[400px] justify-between border-t border-gray-100 bg-white/90 px-6 py-2 pb-8 backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-1/2 z-[70] flex w-full max-w-[400px] -translate-x-1/2 justify-between border-t border-gray-100 bg-white/90 px-6 py-2 pb-8 backdrop-blur-xl">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
