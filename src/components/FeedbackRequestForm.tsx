@@ -29,10 +29,11 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
   const studentId = useStudentId();
   const { session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const selectedFileRef = useRef<File | null>(null);
   const [message, setMessage] = useState("");
   const [mediaLabel, setMediaLabel] = useState("");
-  const [mediaType, setMediaType] = useState<"audio" | "video">("audio");
+  const [mediaType, setMediaType] = useState<"audio" | "video">("video");
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSizeLabel, setFileSizeLabel] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -182,50 +183,43 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
 
         <section className="border-b border-surface px-6 py-6">
           <h2 className="mb-2 text-[18px] font-bold tracking-tight text-gray-900">
-            연습 파일 업로드
+            연습 영상·음원 업로드
           </h2>
           <p className="mb-4 text-[12px] text-gray-500">
-            mp3, m4a, mp4, mov 등 연습 파일을 올려 주세요.
+            연습 영상을 촬영하거나, mp4·mov·mp3 등 파일을 올려 주세요.
           </p>
-
-          <div className="mb-4 flex gap-2">
-            {(["audio", "video"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => {
-                  setMediaType(t);
-                  setFileName(null);
-                  setFileSizeLabel(null);
-                  setFileError(null);
-                  selectedFileRef.current = null;
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                className={`flex-1 rounded-xl border py-3 text-[13px] font-bold ${
-                  mediaType === t
-                    ? "border-brand-500 bg-brand-50 text-brand-600"
-                    : "border-gray-200 text-gray-600"
-                }`}
-              >
-                <i className={`fa-solid ${t === "audio" ? "fa-microphone" : "fa-video"} mr-1`} />
-                {t === "audio" ? "음원" : "영상"}
-              </button>
-            ))}
-          </div>
 
           <input
             ref={fileInputRef}
             type="file"
-            accept={mediaType === "audio" ? "audio/*" : "video/*"}
+            accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3"
+            className="hidden"
+            onChange={(e) => handleFileSelect(e.target.files?.[0])}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="video/*"
+            capture="environment"
             className="hidden"
             onChange={(e) => handleFileSelect(e.target.files?.[0])}
           />
 
           <button
             type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={submitting}
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-[16px] bg-gray-900 py-4 text-[15px] font-bold text-white hover:bg-gray-800 disabled:opacity-60"
+          >
+            <i className="fa-solid fa-video" />
+            카메라로 촬영하기
+          </button>
+
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={submitting}
-            className={`flex w-full flex-col items-center gap-2 rounded-[16px] border-2 border-dashed py-10 transition-colors ${
+            className={`flex w-full flex-col items-center gap-2 rounded-[16px] border-2 border-dashed py-8 transition-colors ${
               fileName
                 ? "border-brand-200 bg-brand-50/40"
                 : "border-gray-200 bg-surface hover:border-brand-300"
@@ -244,8 +238,8 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
               </>
             ) : (
               <>
-                <i className="fa-solid fa-cloud-arrow-up text-2xl text-gray-400" />
-                <span className="text-[14px] font-bold text-gray-600">탭하여 파일 선택</span>
+                <i className="fa-solid fa-folder-open text-2xl text-gray-400" />
+                <span className="text-[14px] font-bold text-gray-600">갤러리에서 파일 선택</span>
               </>
             )}
           </button>

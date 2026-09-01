@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { useSession } from "@/lib/auth/use-session";
 import { useStudentId } from "@/lib/auth/use-student-id";
 import { savePracticeRecording, practiceSaveErrorMessage } from "@/lib/practice-recording";
-import { getMediaDuration } from "@/lib/feedback-pricing";
+import { getMediaDuration, isVideoFile } from "@/lib/feedback-pricing";
 import { markAttendanceToday } from "@/lib/attendance";
 import { formatTime } from "@/lib/timestamp-comments";
 
@@ -73,6 +73,7 @@ export function RecordModal() {
   const studentId = useStudentId();
   const { session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
   const [isMonitorOn, setIsMonitorOn] = useState(false);
@@ -84,6 +85,8 @@ export function RecordModal() {
   const [micError, setMicError] = useState<string | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordedIsVideo, setRecordedIsVideo] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [playbackPlaying, setPlaybackPlaying] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -169,6 +172,7 @@ export function RecordModal() {
     setMicError(null);
     playbackAudioRef.current?.pause();
     setPlaybackPlaying(false);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
 
     try {
       let durationSec = 1;
@@ -181,15 +185,18 @@ export function RecordModal() {
         durationSec = 1;
       }
 
+      const isVideo = isVideoFile(file);
       setRecordedBlob(file);
+      setRecordedIsVideo(isVideo);
+      setPreviewUrl(URL.createObjectURL(file));
       setElapsedSec(durationSec);
       recordedDurationRef.current = durationSec;
     } catch {
-      setMicError("녹음 파일을 불러오지 못했어요. 다시 시도해 주세요.");
+      setMicError("파일을 불러오지 못했어요. 다시 시도해 주세요.");
     } finally {
       setMicLoading(false);
     }
-  }, []);
+  }, [previewUrl]);
 
   const openModal = () => {
     if (isRecorderNotSupported() && isMicNotSupported()) {
@@ -198,6 +205,9 @@ export function RecordModal() {
     }
     setOpen(true);
     setRecordedBlob(null);
+    setRecordedIsVideo(false);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     setElapsedSec(0);
     recordedDurationRef.current = 0;
     recordingStartedAtRef.current = null;
@@ -259,6 +269,8 @@ export function RecordModal() {
         const blob = new Blob(chunksRef.current, { type: blobType });
         if (blob.size > 0) {
           setRecordedBlob(blob);
+          setRecordedIsVideo(false);
+          setPreviewUrl(URL.createObjectURL(blob));
         } else {
           setRecordedBlob(null);
           setMicError("녹음 파일을 만들지 못했어요. 1초 이상 녹음한 뒤 다시 시도해 주세요.");
@@ -300,6 +312,8 @@ export function RecordModal() {
     stopMic();
     setMicLoading(false);
     setIsFinalizing(false);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     setOpen(false);
   };
 
@@ -409,7 +423,7 @@ export function RecordModal() {
           onClick={openModal}
           className="w-full rounded-xl bg-gray-900 py-3.5 text-[15px] font-bold text-white hover:bg-gray-800"
         >
-          지금 녹음 시작하기
+          지금 연습 영상 올리기
         </button>
       )}
 
@@ -419,7 +433,7 @@ export function RecordModal() {
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end">
             <div className="pointer-events-auto shadow-float max-h-[88vh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] no-scrollbar">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-[18px] font-bold text-gray-900">자유 녹음</h3>
+                <h3 className="text-[18px] font-bold text-gray-900">연습 기록</h3>
                 <button
                   type="button"
                   onClick={closeModal}
@@ -429,7 +443,57 @@ export function RecordModal() {
                 </button>
               </div>
 
-              <p className="mb-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-500">
+              <p className="mb-4 text-[12px] leading-relaxed text-gray-500">
+                연습 영상을 촬영하거나 갤러리에서 올려 주세요. 음원 파일도 가능해요.
+              </p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3"
+                className="hidden"
+                onChange={handleFileInputChange}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="video/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileInputChange}
+              />
+
+              {!recordedBlob && (
+                <>
+                  <button
+                    type="button"
+                    disabled={micLoading || saving}
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 text-[15px] font-bold text-white hover:bg-gray-800 disabled:opacity-60"
+                  >
+                    <i className="fa-solid fa-video" />
+                    카메라로 촬영하기
+                  </button>
+                  <button
+                    type="button"
+                    disabled={micLoading || saving}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mb-5 w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600"
+                  >
+                    갤러리에서 영상·음원 선택
+                  </button>
+
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gray-100" />
+                    <span className="text-[11px] font-semibold text-gray-400">또는 앱에서 녹음</span>
+                    <div className="h-px flex-1 bg-gray-100" />
+                  </div>
+                </>
+              )}
+
+              {!recordedBlob && (
+                <>
+              <p className="mb-3 flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-500">
                 <i className="fa-solid fa-headphones mt-0.5 shrink-0 text-[11px] text-gray-400" />
                 <span>
                   <span className="font-semibold text-gray-600">이어폰 사용을 권장해요.</span>{" "}
@@ -526,22 +590,8 @@ export function RecordModal() {
                   {isRecording ? "탭하여 녹음 중지" : "탭하여 녹음 시작"}
                 </p>
               </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={handleFileInputChange}
-              />
-              <button
-                type="button"
-                disabled={micLoading || saving}
-                onClick={() => fileInputRef.current?.click()}
-                className="mb-4 w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600"
-              >
-                녹음 파일 선택하기
-              </button>
+                </>
+              )}
 
               {micError && (
                 <p className="mb-3 px-2 text-center text-[12px] font-medium text-red-500">{micError}</p>
@@ -549,33 +599,63 @@ export function RecordModal() {
 
               {recordedBlob && recordedBlob.size > 0 && (
                 <div>
-                  <div className="mb-3 flex items-center gap-3 rounded-[16px] bg-surface p-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (playbackPlaying) {
-                          playbackAudioRef.current?.pause();
-                          setPlaybackPlaying(false);
-                          return;
-                        }
-                        playbackAudioRef.current?.pause();
-                        const audio = new Audio(URL.createObjectURL(recordedBlob));
-                        playbackAudioRef.current = audio;
-                        void audio.play();
-                        setPlaybackPlaying(true);
-                        audio.onended = () => setPlaybackPlaying(false);
-                      }}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white"
-                    >
-                      <i
-                        className={`fa-solid ${playbackPlaying ? "fa-pause" : "fa-play"} text-[12px] ${playbackPlaying ? "" : "ml-0.5"}`}
+                  <div className="mb-3 rounded-[16px] bg-surface p-4">
+                    {recordedIsVideo && previewUrl ? (
+                      <video
+                        src={previewUrl}
+                        controls
+                        playsInline
+                        className="mb-3 w-full rounded-xl bg-black"
                       />
-                    </button>
-                    <div>
-                      <p className="text-[13px] font-bold text-gray-900">방금 녹음한 연습</p>
-                      <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
-                    </div>
+                    ) : (
+                      <div className="mb-3 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (playbackPlaying) {
+                              playbackAudioRef.current?.pause();
+                              setPlaybackPlaying(false);
+                              return;
+                            }
+                            playbackAudioRef.current?.pause();
+                            const audio = new Audio(previewUrl ?? URL.createObjectURL(recordedBlob));
+                            playbackAudioRef.current = audio;
+                            void audio.play();
+                            setPlaybackPlaying(true);
+                            audio.onended = () => setPlaybackPlaying(false);
+                          }}
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white"
+                        >
+                          <i
+                            className={`fa-solid ${playbackPlaying ? "fa-pause" : "fa-play"} text-[12px] ${playbackPlaying ? "" : "ml-0.5"}`}
+                          />
+                        </button>
+                        <div>
+                          <p className="text-[13px] font-bold text-gray-900">미리듣기</p>
+                          <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-[13px] font-bold text-gray-900">
+                      {recordedIsVideo ? "선택한 연습 영상" : "선택한 연습 음원"}
+                    </p>
+                    <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
                   </div>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      setRecordedBlob(null);
+                      setRecordedIsVideo(false);
+                      if (previewUrl) URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                      setElapsedSec(0);
+                      recordedDurationRef.current = 0;
+                    }}
+                    className="mb-2 w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600"
+                  >
+                    다시 선택하기
+                  </button>
                   <button
                     type="button"
                     disabled={saving}

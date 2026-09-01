@@ -105,13 +105,13 @@ export function DailyView() {
           </div>
           <div className="flex flex-col items-center rounded-[24px] border border-gray-100 bg-surface p-6 text-center">
             <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white text-2xl text-brand-500 shadow-sm">
-              <i className="fa-solid fa-microphone" />
+              <i className="fa-solid fa-video" />
             </div>
             <span className="mb-2 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600">
               자율 미션
             </span>
-            <h4 className="mb-1 text-[16px] font-bold text-gray-900">오늘 연습한 곡 자유 녹음하기</h4>
-            <p className="mb-5 text-[13px] text-gray-500">원하는 곡을 녹음하고 일지에 남겨보세요</p>
+            <h4 className="mb-1 text-[16px] font-bold text-gray-900">오늘 연습 영상 올리기</h4>
+            <p className="mb-5 text-[13px] text-gray-500">연습 영상을 촬영하거나 파일을 올려 일지에 남겨보세요</p>
             <RecordModal />
           </div>
         </section>

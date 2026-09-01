@@ -169,9 +169,20 @@ export async function uploadPracticeBlob(
   durationSec: number,
   onProgress?: (percent: number) => void,
 ) {
-  const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("webm") ? "webm" : "m4a";
+  const isVideo = blob.type.startsWith("video");
+  const ext = isVideo
+    ? blob.type.includes("quicktime")
+      ? "mov"
+      : blob.type.includes("webm")
+        ? "webm"
+        : "mp4"
+    : blob.type.includes("webm")
+      ? "webm"
+      : blob.type.includes("mpeg")
+        ? "mp3"
+        : "m4a";
   const file = new File([blob], `practice-${durationSec}s.${ext}`, {
-    type: blob.type || "audio/mp4",
+    type: blob.type || (isVideo ? "video/mp4" : "audio/mp4"),
   });
   const result = await uploadFeedbackMedia(userId, file, onProgress);
   return result.publicUrl;
