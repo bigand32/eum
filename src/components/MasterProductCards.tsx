@@ -1,6 +1,9 @@
 "use client";
 
 import { useDb } from "@/lib/db/use-db";
+import { formatPrice } from "@/lib/db/schema";
+import { PremiumPriceDisplay, PremiumPromoBadge } from "@/components/PremiumPromoBadge";
+import { PREMIUM_FEEDBACK_LABEL } from "@/lib/pricing/premium";
 
 export function MasterProductCards({ masterId }: { masterId: string }) {
   const db = useDb();
@@ -12,21 +15,25 @@ export function MasterProductCards({ masterId }: { masterId: string }) {
   const rows = [
     {
       key: "feedback",
-      label: "음성/영상 피드백",
-      note: "연습 파일을 올리면 마스터가 코칭해 드려요",
+      label: PREMIUM_FEEDBACK_LABEL,
+      note: "9/15~10/30 얼리버드 · 이후 자동 69,000원",
+      isPremium: true,
       primary: true,
     },
     {
       key: "phone-15",
       label: "전화 상담 (15분)",
+      price: `${formatPrice(pricing.phonePrice15Min)}원`,
     },
     {
       key: "phone-30",
       label: "전화 상담 (30분)",
+      price: `${formatPrice(pricing.phonePrice30Min)}원`,
     },
     {
       key: "visit",
       label: `방문 상담 (${pricing.visitDurationMin}분)`,
+      price: `${formatPrice(pricing.visitPrice)}원`,
     },
   ] as const;
 
@@ -44,7 +51,21 @@ export function MasterProductCards({ masterId }: { masterId: string }) {
             {"note" in row && row.note && (
               <p className="mt-1 text-[12px] font-medium text-gray-500">{row.note}</p>
             )}
+            {"isPremium" in row && row.isPremium && (
+              <div className="mt-2">
+                <PremiumPromoBadge />
+              </div>
+            )}
           </div>
+          {"isPremium" in row && row.isPremium ? (
+            <PremiumPriceDisplay size="sm" />
+          ) : (
+            "price" in row && (
+              <p className="shrink-0 text-[15px] font-extrabold tracking-tight text-gray-900">
+                {row.price}
+              </p>
+            )
+          )}
         </div>
       ))}
     </div>

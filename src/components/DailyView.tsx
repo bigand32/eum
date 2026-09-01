@@ -43,7 +43,7 @@ export function DailyView() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-gray-50 bg-white/90 px-6 py-4 backdrop-blur-xl">
+      <header className="safe-top sticky top-0 z-50 flex items-center justify-between border-b border-gray-50 bg-white/90 px-6 pb-4 backdrop-blur-xl">
         <div className="text-xl font-extrabold tracking-tight text-gray-900">연습일지</div>
         <div className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-[14px] font-bold text-brand-500">
           <i className="fa-solid fa-p" /> {(student?.points ?? 0).toLocaleString()}

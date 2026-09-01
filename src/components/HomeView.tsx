@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EumLogo } from "@/components/EumLogo";
 import { FEATURED_ACADEMY } from "@/lib/db/academies";
 import { useDb } from "@/lib/db/use-db";
 
@@ -32,10 +33,8 @@ export function HomeView() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex items-center justify-between bg-white/80 px-6 py-4 backdrop-blur-xl">
-        <div className="text-[24px] font-extrabold tracking-tighter text-gray-900">
-          eum<span className="text-brand-500">.</span>
-        </div>
+      <header className="safe-top sticky top-0 z-50 flex items-center justify-between bg-white/80 px-6 pb-4 backdrop-blur-xl">
+        <EumLogo href="/" />
         <div className="flex gap-4 text-xl text-gray-800">
           <Link href="/search" aria-label="검색" className="transition-colors hover:text-brand-500">
             <i className="fa-solid fa-magnifying-glass" />

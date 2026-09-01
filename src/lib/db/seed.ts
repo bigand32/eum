@@ -27,7 +27,7 @@ export const SEED_DB: EumDatabase = {
         "누적 1:1 코칭 842건",
       ],
       pricing: {
-        feedbackPrice: 20000,
+        feedbackPrice: 69000,
         phonePrice15Min: 18000,
         phonePrice30Min: 30000,
         visitPrice: 80000,
@@ -75,7 +75,7 @@ export const SEED_DB: EumDatabase = {
       studentId: DEMO_STUDENT_ID,
       masterId: DEMO_MASTER_ID,
       status: "completed",
-      priceAtPurchase: 20000,
+      priceAtPurchase: 69000,
       studentMessage:
         "고음역대 진입할 때 쪼이는 느낌이 아직 나는데 확인 부탁드려요!",
       mediaLabel: "밤양갱 1절",

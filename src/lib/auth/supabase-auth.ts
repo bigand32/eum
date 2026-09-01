@@ -101,7 +101,7 @@ async function uploadAvatar(userId: string, dataUrl: string): Promise<string> {
 }
 
 const DEFAULT_MASTER_PRICING = {
-  feedbackPrice: 20000,
+  feedbackPrice: 69000,
   phonePrice15Min: 18000,
   phonePrice30Min: 30000,
   visitPrice: 80000,

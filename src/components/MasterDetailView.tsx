@@ -124,9 +124,9 @@ export function MasterDetailView({ masterId }: { masterId: string }) {
 
         <section id="coaching-products" className="border-b border-gray-50 py-8 pl-6">
           <div className="mb-4 pr-6">
-            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">제공 서비스</h3>
+            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">제공 서비스 · 요금</h3>
             <p className="mt-1 text-[13px] font-medium text-gray-400">
-              이 마스터가 제공하는 코칭 서비스예요
+              9/15~10/30 얼리버드 39,000원 · 이후 69,000원
             </p>
           </div>
 

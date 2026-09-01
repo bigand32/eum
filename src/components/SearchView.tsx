@@ -7,6 +7,10 @@ import { ACADEMIES } from "@/lib/db/academies";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { useDb } from "@/lib/db/use-db";
 import { getOnboardingPrefs } from "@/lib/onboarding";
+import { SearchListThumb } from "@/components/SearchListThumb";
+import { EumLogo } from "@/components/EumLogo";
+import { PREMIUM_FEEDBACK_LABEL } from "@/lib/pricing/premium";
+import { PremiumPriceDisplay } from "@/components/PremiumPromoBadge";
 
 const MASTER_TRAITS: Record<string, string[]> = {
   "master-1": ["30분 내 응답", "스파르타형"],
@@ -113,7 +117,11 @@ export function SearchView() {
 
   return (
     <div className="bg-white">
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 px-5 pt-12 pb-0 backdrop-blur-md">
+      <header className="safe-top sticky top-0 z-50 border-b border-gray-100 bg-white/95 px-5 pb-0 backdrop-blur-md">
+        <div className="mb-4 flex items-center justify-between">
+          <EumLogo href="/" />
+        </div>
+
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-12 flex-1 items-center rounded-[16px] border border-gray-100 bg-surface px-4 transition-colors focus-within:border-brand-500 focus-within:bg-white">
             <i className="fa-solid fa-magnifying-glass mr-2.5 text-gray-400" />
@@ -135,7 +143,7 @@ export function SearchView() {
               isMaster ? "text-brand-500" : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            마스터 찾기
+            커뮤니티
           </button>
           <button
             type="button"
@@ -144,7 +152,7 @@ export function SearchView() {
               !isMaster ? "text-brand-500" : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            학원 찾기
+            파키즈
           </button>
           <div
             className="tab-indicator absolute bottom-0 left-0 h-0.5 w-1/2 rounded-t-full bg-brand-500"
@@ -154,8 +162,8 @@ export function SearchView() {
       </header>
 
       <div
-        className={`sticky top-[116px] z-40 gap-2 overflow-x-auto border-b border-gray-50 bg-white px-5 py-3 no-scrollbar ${
-          isMaster ? "flex" : "hidden"
+        className={`sticky top-[148px] z-40 flex h-[52px] gap-2 overflow-x-auto border-b border-gray-50 bg-white px-5 py-3 no-scrollbar ${
+          isMaster ? "" : "hidden"
         }`}
       >
         {GENRE_FILTERS.map((f) => (
@@ -175,8 +183,8 @@ export function SearchView() {
       </div>
 
       <div
-        className={`sticky top-[116px] z-40 gap-2 overflow-x-auto border-b border-gray-50 bg-white px-5 py-3 no-scrollbar ${
-          isMaster ? "hidden" : "flex"
+        className={`sticky top-[148px] z-40 flex h-[52px] gap-2 overflow-x-auto border-b border-gray-50 bg-white px-5 py-3 no-scrollbar ${
+          isMaster ? "hidden" : ""
         }`}
       >
         {ACADEMY_FILTERS.map((f) => (
@@ -215,14 +223,7 @@ export function SearchView() {
                 className="shadow-soft cursor-pointer rounded-[24px] border border-gray-100 bg-white p-5 transition-colors hover:border-brand-200"
               >
                 <div className="flex gap-4">
-                  <div className="relative shrink-0">
-                    <img
-                      src={m.avatarUrl}
-                      alt=""
-                      className="h-[72px] w-[72px] rounded-full border border-gray-50 object-cover"
-                    />
-                    <div className="absolute right-1 bottom-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />
-                  </div>
+                  <SearchListThumb src={m.avatarUrl} alt={m.title} variant="master" />
                   <div className="flex-1">
                     <div className="mb-1 flex items-start justify-between">
                       <div>
@@ -252,8 +253,9 @@ export function SearchView() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-1 border-t border-gray-50 pt-3">
-                  <div className="text-[12px] font-medium text-gray-500">음성/영상 피드백 · 전화/방문 상담</div>
+                <div className="mt-1 flex items-center justify-between border-t border-gray-50 pt-3">
+                  <div className="text-[12px] font-medium text-gray-500">{PREMIUM_FEEDBACK_LABEL}</div>
+                  <PremiumPriceDisplay size="sm" showStrike={false} />
                 </div>
               </Link>
             ))
@@ -276,7 +278,7 @@ export function SearchView() {
               <Link
                 key={a.id}
                 href={`/academies/${a.id}`}
-                className={`shadow-soft relative cursor-pointer overflow-hidden rounded-[24px] border bg-white p-4 transition-colors ${
+                className={`shadow-soft relative cursor-pointer overflow-hidden rounded-[24px] border bg-white p-5 transition-colors ${
                   a.isAd
                     ? "border-brand-100 hover:border-brand-300"
                     : "border-gray-100 hover:border-brand-200"
@@ -288,9 +290,7 @@ export function SearchView() {
                   </div>
                 )}
                 <div className="flex gap-4">
-                  <div className="h-[84px] w-[84px] shrink-0 overflow-hidden rounded-[16px] border border-gray-100">
-                    <img src={a.imageUrl} alt="" className="h-full w-full object-cover" />
-                  </div>
+                  <SearchListThumb src={a.imageUrl} alt={a.name} variant="academy" />
                   <div className="flex flex-1 flex-col justify-center">
                     <div className="mb-1 flex items-start justify-between">
                       <h3 className="text-[16px] font-bold leading-tight text-gray-900">{a.name}</h3>

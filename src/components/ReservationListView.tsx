@@ -100,7 +100,7 @@ export function ReservationListView() {
 
   return (
     <div className="bg-surface min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 px-5 pt-12 pb-0 backdrop-blur-md">
+      <header className="safe-top sticky top-0 z-50 border-b border-gray-100 bg-white/95 px-5 pb-0 backdrop-blur-md">
         <h1 className="mb-4 text-[22px] font-extrabold tracking-tight text-gray-900">예약 내역</h1>
 
         <div className="relative flex text-[15px] font-bold">

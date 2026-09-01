@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMasterId } from "@/lib/auth/use-master-id";
 import { useDb } from "@/lib/db/use-db";
 import { useSession } from "@/lib/auth/use-session";
+import { SignupInviteCard } from "@/components/SignupInviteCard";
 import { signOut } from "@/lib/auth/session";
 
 const menuItems = [
@@ -105,6 +106,10 @@ export function MasterSettingsView() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="px-6 pt-2 pb-2">
+          <SignupInviteCard />
         </section>
 
         <section className="mt-2 px-6 pt-2">

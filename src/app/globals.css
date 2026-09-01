@@ -79,3 +79,11 @@ body {
 .tab-indicator {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+}
+
+.safe-top-pad {
+  padding-top: calc(max(1rem, env(safe-area-inset-top, 0px)) + 0.75rem);
+}

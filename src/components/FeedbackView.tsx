@@ -71,7 +71,7 @@ export function FeedbackView({ orderId }: { orderId: string }) {
       <main className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pb-24">
         {justSubmitted && (
           <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-center text-[13px] font-medium text-brand-600">
-            요청이 접수됐어요! 마스터가 피드백을 작성하면 알려드릴게요.
+            요청이 접수됐어요! 결제가 완료됐어요. 마스터가 피드백을 작성하면 알려드릴게요.
           </div>
         )}
 

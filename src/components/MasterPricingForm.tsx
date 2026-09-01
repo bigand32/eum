@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { saveMasterPricing } from "@/lib/db/api";
 import { useDb } from "@/lib/db/use-db";
 import { useMasterId } from "@/lib/auth/use-master-id";
+import { PREMIUM_FEEDBACK_LABEL } from "@/lib/pricing/premium";
 import { formatPrice } from "@/lib/db/schema";
 
 type PriceField = "feedbackPrice" | "visitPrice";
@@ -20,7 +21,7 @@ const PRODUCTS: {
 }[] = [
   {
     key: "feedbackPrice",
-    label: "음성/영상 피드백",
+    label: PREMIUM_FEEDBACK_LABEL,
     desc: "비동기 · 구간별 코멘트",
     icon: "fa-microphone-lines",
     suffix: "원 / 건",
@@ -47,7 +48,7 @@ export function MasterPricingForm() {
   const masterId = useMasterId();
   const master = db.masters.find((m) => m.id === masterId);
 
-  const [feedbackPrice, setFeedbackPrice] = useState(20000);
+  const [feedbackPrice, setFeedbackPrice] = useState(69000);
   const [phonePrice15Min, setPhonePrice15Min] = useState(18000);
   const [phonePrice30Min, setPhonePrice30Min] = useState(30000);
   const [visitPrice, setVisitPrice] = useState(80000);

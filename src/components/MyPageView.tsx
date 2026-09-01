@@ -64,7 +64,7 @@ export function MyPageView() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex items-center justify-between bg-surface/90 px-6 py-4 backdrop-blur-md">
+      <header className="safe-top sticky top-0 z-50 flex items-center justify-between bg-surface/90 px-6 pb-4 backdrop-blur-md">
         <h1 className="text-[20px] font-extrabold tracking-tight text-gray-900">내 정보</h1>
         <div className="flex gap-4 text-xl text-gray-800">
           <button

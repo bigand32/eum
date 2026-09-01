@@ -99,7 +99,7 @@ export type DbPracticeRecord = {
 };
 
 const DEFAULT_PRICING: MasterPricing = {
-  feedbackPrice: 20000,
+  feedbackPrice: 69000,
   phonePrice15Min: 18000,
   phonePrice30Min: 30000,
   visitPrice: 80000,

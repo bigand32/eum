@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EumLogo } from "@/components/EumLogo";
 import { useDb } from "@/lib/db/use-db";
 import { useSession } from "@/lib/auth/use-session";
 import { useMasterId } from "@/lib/auth/use-master-id";
@@ -34,14 +35,9 @@ export function MasterHomeClient() {
 
   return (
     <>
-      <div className="relative rounded-b-[32px] bg-[#4f46e5] px-6 pt-12 pb-16 text-white">
-        <header className="mb-6 flex items-center justify-between">
-          <div className="text-[22px] font-extrabold tracking-tighter">
-            eum<span className="text-brand-200">.</span>{" "}
-            <span className="ml-1 align-middle rounded-full bg-white/20 px-2 py-0.5 text-[12px] font-semibold">
-              마스터
-            </span>
-          </div>
+      <div className="relative rounded-b-[32px] bg-[#4f46e5] px-6 pb-16 text-white safe-top-pad">
+        <header className="safe-top mb-6 flex items-center justify-between">
+          <EumLogo variant="light" suffix="파트너스" />
           <button
             type="button"
             aria-label="알림"
