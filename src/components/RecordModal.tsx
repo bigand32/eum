@@ -8,14 +8,6 @@ import { getMediaDuration } from "@/lib/feedback-pricing";
 import { markAttendanceToday } from "@/lib/attendance";
 import { formatTime } from "@/lib/timestamp-comments";
 
-function isIOSDevice() {
-  if (typeof navigator === "undefined") return false;
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  );
-}
-
 function getRecorderMimeType() {
   const candidates = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
   for (const type of candidates) {
@@ -56,7 +48,7 @@ function createMediaRecorder(stream: MediaStream): MediaRecorder {
     try {
       return new MediaRecorder(stream, { mimeType });
     } catch {
-      // Safari fallback
+      // fallback to default recorder
     }
   }
   return new MediaRecorder(stream);
@@ -65,26 +57,25 @@ function createMediaRecorder(stream: MediaStream): MediaRecorder {
 function micErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     if (error.message === "NOT_SUPPORTED") {
-      return "이 브라우저에서는 녹음을 지원하지 않아요. Safari로 열어 주세요.";
+      return "이 기기에서는 앱 녹음을 지원하지 않아요. 아래에서 파일을 선택해 주세요.";
     }
     if (error.message === "RECORD_NOT_SUPPORTED") {
-      return "이 기기에서는 녹음 형식을 지원하지 않아요.";
+      return "이 기기에서는 녹음 형식을 지원하지 않아요. 파일 선택을 이용해 주세요.";
     }
   }
   if (isPermissionError(error)) {
-    return "마이크 권한이 필요해요. 설정 → Safari → 마이크에서 허용해 주세요.";
+    return "마이크 권한이 필요해요. 브라우저 설정에서 마이크를 허용해 주세요.";
   }
-  return "마이크를 사용할 수 없어요. Safari를 새로고침하거나 이어폰을 연결해 보세요.";
+  return "마이크를 사용할 수 없어요. 페이지를 새로고침하거나 파일을 선택해 주세요.";
 }
 
 export function RecordModal() {
   const studentId = useStudentId();
   const { session } = useSession();
-  const isIOS = isIOSDevice();
-  const iosInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
-  const [isMonitorOn, setIsMonitorOn] = useState(() => !isIOS);
+  const [isMonitorOn, setIsMonitorOn] = useState(false);
   const [isReverbOn, setIsReverbOn] = useState(false);
   const [isPitchOn, setIsPitchOn] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -201,8 +192,8 @@ export function RecordModal() {
   }, []);
 
   const openModal = () => {
-    if (!isIOS && isRecorderNotSupported()) {
-      alert("이 브라우저에서는 녹음을 지원하지 않아요.");
+    if (isRecorderNotSupported() && isMicNotSupported()) {
+      setOpen(true);
       return;
     }
     setOpen(true);
@@ -333,7 +324,7 @@ export function RecordModal() {
       try {
         const stream = await micPromise;
 
-        if (isMonitorOn && !isIOS) {
+        if (isMonitorOn) {
           const ctx = new AudioContext();
           if (ctx.state === "suspended") await ctx.resume();
           setupMonitorGraph(ctx, stream);
@@ -343,15 +334,14 @@ export function RecordModal() {
         startRecording(stream);
       } catch (error) {
         stopMic();
-        const message = micErrorMessage(error);
-        setMicError(message);
+        setMicError(micErrorMessage(error));
       } finally {
         setMicLoading(false);
       }
     })();
   };
 
-  const handleIOSInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -400,6 +390,15 @@ export function RecordModal() {
     }
   }, [isPitchOn]);
 
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   useEffect(() => () => stopMic(), [stopMic]);
 
   return (
@@ -415,208 +414,178 @@ export function RecordModal() {
       )}
 
       {open && (
-        <div className="pointer-events-none fixed inset-0 z-[60] mx-auto max-w-[400px]">
+        <div className="pointer-events-none fixed inset-0 z-[80] mx-auto max-w-[400px]">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end">
-            <div className="pointer-events-auto shadow-float max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-5 pb-10 no-scrollbar">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[18px] font-bold text-gray-900">자유 녹음</h3>
+            <div className="pointer-events-auto shadow-float max-h-[88vh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] no-scrollbar">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-[18px] font-bold text-gray-900">자유 녹음</h3>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-gray-500"
+                >
+                  <i className="fa-solid fa-xmark" />
+                </button>
+              </div>
+
+              <p className="mb-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-500">
+                <i className="fa-solid fa-headphones mt-0.5 shrink-0 text-[11px] text-gray-400" />
+                <span>
+                  <span className="font-semibold text-gray-600">이어폰 사용을 권장해요.</span>{" "}
+                  조용한 곳에서 녹음하면 더 좋아요.
+                </span>
+              </p>
+
+              <div className="flex items-center justify-between border-b border-gray-100 py-3">
+                <div>
+                  <p className="text-[14px] font-bold text-gray-900">실시간 모니터링</p>
+                  <p className="mt-0.5 text-[12px] text-gray-500">말하는 동시에 내 목소리 들리기</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isMonitorOn}
+                  onClick={() => setIsMonitorOn((v) => !v)}
+                  className={`toggle-track relative h-7 w-12 shrink-0 rounded-full ${isMonitorOn ? "is-on bg-brand-500" : "bg-gray-200"}`}
+                >
+                  <span className="toggle-knob absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform" />
+                </button>
+              </div>
+
+              <div className="mb-4 border-b border-gray-100 py-3">
+                <p className="mb-3 text-[12px] font-bold tracking-wide text-gray-400">이펙트 (선택)</p>
+                <div className="flex gap-2">
+                  {[
+                    { label: "리버브", icon: "fa-water", on: isReverbOn, set: setIsReverbOn },
+                    { label: "피치 보정", icon: "fa-music", on: isPitchOn, set: setIsPitchOn },
+                  ].map((fx) => (
+                    <button
+                      key={fx.label}
+                      type="button"
+                      onClick={() => fx.set((v) => !v)}
+                      className={`flex-1 rounded-xl border py-2.5 text-[13px] font-semibold transition ${
+                        fx.on
+                          ? "border-brand-500 bg-brand-50 text-brand-600"
+                          : "border-gray-200 bg-white text-gray-600"
+                      }`}
+                    >
+                      <i className={`fa-solid ${fx.icon} mr-1`} />
+                      {fx.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-2 flex flex-col items-center py-4">
+                <div className="mb-3 flex h-5 items-center gap-2">
+                  {isRecording ? (
+                    <>
+                      <span className="rec-dot h-2 w-2 rounded-full bg-red-500" />
+                      <span className="text-[13px] font-bold text-red-500">녹음 중</span>
+                    </>
+                  ) : isFinalizing ? (
+                    <span className="text-[13px] font-medium text-gray-400">녹음 파일 만드는 중...</span>
+                  ) : (
+                    <span className="text-[13px] font-medium text-gray-400">
+                      {micLoading
+                        ? "마이크 연결 중..."
+                        : recordedBlob
+                          ? "녹음 완료"
+                          : micReady
+                            ? "녹음 준비됨"
+                            : "빨간 버튼을 눌러 녹음 시작"}
+                    </span>
+                  )}
+                </div>
+                <div className="mb-4 text-[36px] font-extrabold tracking-tight text-gray-900 tabular-nums">
+                  {formatTime(elapsedSec)}
+                </div>
+                <div
+                  className={`mb-5 flex h-10 items-end justify-center gap-[3px] ${isRecording ? "" : "opacity-30"}`}
+                >
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="wave-bar w-[3px] rounded-full bg-brand-500"
+                      style={{ height: "100%", animationDelay: `${i * 0.1}s` }}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={micLoading || isFinalizing || saving}
+                  onClick={handleRecordTap}
+                  className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl text-white shadow-[0_8px_24px_rgba(239,68,68,0.35)] disabled:opacity-60 ${
+                    isRecording ? "bg-gray-900" : "bg-red-500 hover:bg-red-600"
+                  }`}
+                >
+                  <i className={`fa-solid ${isRecording ? "fa-stop" : "fa-microphone"}`} />
+                </button>
+                <p className="mt-3 text-center text-[12px] text-gray-400">
+                  {isRecording ? "탭하여 녹음 중지" : "탭하여 녹음 시작"}
+                </p>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handleFileInputChange}
+              />
               <button
                 type="button"
-                onClick={closeModal}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-gray-500"
+                disabled={micLoading || saving}
+                onClick={() => fileInputRef.current?.click()}
+                className="mb-4 w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600"
               >
-                <i className="fa-solid fa-xmark" />
+                녹음 파일 선택하기
               </button>
-            </div>
 
-            {isIOS ? (
-              <div className="mb-4 space-y-4">
-                <p className="text-[13px] leading-relaxed text-gray-500">
-                  iPhone Safari에서는 앱 안 녹음 대신{" "}
-                  <span className="font-semibold text-gray-700">기본 녹음기</span>를 사용해요.
-                  녹음 후 파일이 아래에 나타납니다.
-                </p>
-                <input
-                  ref={iosInputRef}
-                  type="file"
-                  accept="audio/*"
-                  capture
-                  className="hidden"
-                  onChange={handleIOSInputChange}
-                />
-                <button
-                  type="button"
-                  disabled={micLoading || saving}
-                  onClick={() => iosInputRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-4 text-[16px] font-bold text-white hover:bg-red-600 disabled:opacity-60"
-                >
-                  <i className="fa-solid fa-microphone" />
-                  {micLoading ? "불러오는 중..." : "iPhone으로 녹음하기"}
-                </button>
-                <button
-                  type="button"
-                  disabled={micLoading || saving}
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "audio/*";
-                    input.onchange = () => {
-                      const file = input.files?.[0];
-                      if (file) void applyRecordedFile(file);
-                    };
-                    input.click();
-                  }}
-                  className="w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600"
-                >
-                  녹음 파일 선택하기
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="mb-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-500">
-                  <i className="fa-solid fa-headphones mt-0.5 shrink-0 text-[11px] text-gray-400" />
-                  <span>
-                    <span className="font-semibold text-gray-600">이어폰 사용을 권장해요.</span>{" "}
-                    스피커로 모니터링하면 하울링이 날 수 있어요.
-                  </span>
-                </p>
+              {micError && (
+                <p className="mb-3 px-2 text-center text-[12px] font-medium text-red-500">{micError}</p>
+              )}
 
-                <div className="flex items-center justify-between border-b border-gray-100 py-3">
-                  <div>
-                    <p className="text-[14px] font-bold text-gray-900">실시간 모니터링</p>
-                    <p className="mt-0.5 text-[12px] text-gray-500">말하는 동시에 내 목소리 들리기</p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={isMonitorOn}
-                    onClick={() => setIsMonitorOn((v) => !v)}
-                    className={`toggle-track relative h-7 w-12 shrink-0 rounded-full ${isMonitorOn ? "is-on bg-brand-500" : "bg-gray-200"}`}
-                  >
-                    <span className="toggle-knob absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform" />
-                  </button>
-                </div>
-
-                <div className="mb-4 border-b border-gray-100 py-3">
-                  <p className="mb-3 text-[12px] font-bold tracking-wide text-gray-400">이펙트 (선택)</p>
-                  <div className="flex gap-2">
-                    {[
-                      { label: "리버브", icon: "fa-water", on: isReverbOn, set: setIsReverbOn },
-                      { label: "피치 보정", icon: "fa-music", on: isPitchOn, set: setIsPitchOn },
-                    ].map((fx) => (
-                      <button
-                        key={fx.label}
-                        type="button"
-                        onClick={() => fx.set((v) => !v)}
-                        className={`flex-1 rounded-xl border py-2.5 text-[13px] font-semibold transition ${
-                          fx.on
-                            ? "border-brand-500 bg-brand-50 text-brand-600"
-                            : "border-gray-200 bg-white text-gray-600"
-                        }`}
-                      >
-                        <i className={`fa-solid ${fx.icon} mr-1`} />
-                        {fx.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mb-2 flex flex-col items-center py-4">
-                  <div className="mb-3 flex h-5 items-center gap-2">
-                    {isRecording ? (
-                      <>
-                        <span className="rec-dot h-2 w-2 rounded-full bg-red-500" />
-                        <span className="text-[13px] font-bold text-red-500">녹음 중</span>
-                      </>
-                    ) : isFinalizing ? (
-                      <span className="text-[13px] font-medium text-gray-400">녹음 파일 만드는 중...</span>
-                    ) : (
-                      <span className="text-[13px] font-medium text-gray-400">
-                        {micLoading
-                          ? "마이크 연결 중..."
-                          : recordedBlob
-                            ? "녹음 완료"
-                            : micReady
-                              ? "녹음 준비됨"
-                              : "빨간 버튼을 눌러 녹음 시작"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mb-4 text-[36px] font-extrabold tracking-tight text-gray-900 tabular-nums">
-                    {formatTime(elapsedSec)}
-                  </div>
-                  <div
-                    className={`mb-5 flex h-10 items-end justify-center gap-[3px] ${isRecording ? "" : "opacity-30"}`}
-                  >
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="wave-bar w-[3px] rounded-full bg-brand-500"
-                        style={{ height: "100%", animationDelay: `${i * 0.1}s` }}
-                      />
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={micLoading || isFinalizing}
-                    onClick={handleRecordTap}
-                    className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl text-white shadow-[0_8px_24px_rgba(239,68,68,0.35)] disabled:opacity-60 ${
-                      isRecording ? "bg-gray-900" : "bg-red-500 hover:bg-red-600"
-                    }`}
-                  >
-                    <i className={`fa-solid ${isRecording ? "fa-stop" : "fa-microphone"}`} />
-                  </button>
-                  <p className="mt-3 text-center text-[12px] text-gray-400">
-                    {isRecording ? "탭하여 녹음 중지" : "탭하여 녹음 시작"}
-                  </p>
-                </div>
-              </>
-            )}
-
-            {micError && (
-              <p className="mb-3 px-2 text-center text-[12px] font-medium text-red-500">{micError}</p>
-            )}
-
-            {recordedBlob && recordedBlob.size > 0 && (
-              <div>
-                <div className="mb-3 flex items-center gap-3 rounded-[16px] bg-surface p-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (playbackPlaying) {
+              {recordedBlob && recordedBlob.size > 0 && (
+                <div>
+                  <div className="mb-3 flex items-center gap-3 rounded-[16px] bg-surface p-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (playbackPlaying) {
+                          playbackAudioRef.current?.pause();
+                          setPlaybackPlaying(false);
+                          return;
+                        }
                         playbackAudioRef.current?.pause();
-                        setPlaybackPlaying(false);
-                        return;
-                      }
-                      playbackAudioRef.current?.pause();
-                      const audio = new Audio(URL.createObjectURL(recordedBlob));
-                      playbackAudioRef.current = audio;
-                      void audio.play();
-                      setPlaybackPlaying(true);
-                      audio.onended = () => setPlaybackPlaying(false);
-                    }}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white"
-                  >
-                    <i
-                      className={`fa-solid ${playbackPlaying ? "fa-pause" : "fa-play"} text-[12px] ${playbackPlaying ? "" : "ml-0.5"}`}
-                    />
-                  </button>
-                  <div>
-                    <p className="text-[13px] font-bold text-gray-900">방금 녹음한 연습</p>
-                    <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
+                        const audio = new Audio(URL.createObjectURL(recordedBlob));
+                        playbackAudioRef.current = audio;
+                        void audio.play();
+                        setPlaybackPlaying(true);
+                        audio.onended = () => setPlaybackPlaying(false);
+                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white"
+                    >
+                      <i
+                        className={`fa-solid ${playbackPlaying ? "fa-pause" : "fa-play"} text-[12px] ${playbackPlaying ? "" : "ml-0.5"}`}
+                      />
+                    </button>
+                    <div>
+                      <p className="text-[13px] font-bold text-gray-900">방금 녹음한 연습</p>
+                      <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={handleSave}
+                    className="w-full rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-600 disabled:opacity-50"
+                  >
+                    {saving ? "저장 중..." : "일지에 저장하기 (+300P)"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={handleSave}
-                  className="w-full rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-600 disabled:opacity-50"
-                >
-                  {saving ? "저장 중..." : "일지에 저장하기 (+300P)"}
-                </button>
-              </div>
-            )}
+              )}
             </div>
           </div>
         </div>

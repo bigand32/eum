@@ -3,7 +3,7 @@ import { formatPrice } from "@/lib/db/schema";
 /** MVP: 실제 PG 없이 결제 UX만 시뮬레이션 */
 export async function processFakePayment(amount: number): Promise<void> {
   void amount;
-  await new Promise((resolve) => setTimeout(resolve, 900));
+  await new Promise((resolve) => setTimeout(resolve, 350));
 }
 
 export function formatFakePaymentLabel(amount: number) {

@@ -13,6 +13,7 @@ export const maxDuration = 120;
 type ProcessMediaBody = {
   storagePath?: string;
   mediaType?: "audio" | "video";
+  orderId?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -41,11 +42,12 @@ export async function POST(request: NextRequest) {
   const body = (await request.json()) as ProcessMediaBody;
   const storagePath = body.storagePath?.trim();
   const mediaType = body.mediaType;
+  const orderId = body.orderId?.trim();
 
   if (!storagePath || !mediaType) {
     return NextResponse.json({ error: "INVALID_BODY" }, { status: 400 });
   }
-  if (!storagePath.startsWith(`${user.id}/raw/`)) {
+  if (!storagePath.startsWith(`${user.id}/`) || storagePath.includes("/processed/")) {
     return NextResponse.json({ error: "FORBIDDEN_PATH" }, { status: 403 });
   }
 
@@ -86,8 +88,30 @@ export async function POST(request: NextRequest) {
     await admin.storage.from("feedback-media").remove([storagePath]);
 
     const { data: publicData } = admin.storage.from("feedback-media").getPublicUrl(processedPath);
+    const publicUrl = publicData.publicUrl;
+
+    if (orderId) {
+      const { data: order } = await admin
+        .from("feedback_orders")
+        .select("id, student_id")
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (order) {
+        const { data: student } = await admin
+          .from("students")
+          .select("user_id")
+          .eq("id", order.student_id)
+          .maybeSingle();
+
+        if (student?.user_id === user.id) {
+          await admin.from("feedback_orders").update({ media_url: publicUrl }).eq("id", orderId);
+        }
+      }
+    }
+
     return NextResponse.json({
-      publicUrl: publicData.publicUrl,
+      publicUrl,
       storagePath: processedPath,
       processed: true,
     });

@@ -23,6 +23,14 @@ import {
 export async function fetchDb(userId?: string): Promise<EumDatabase> {
   const supabase = createClient();
 
+  const safe = async <T,>(query: PromiseLike<{ data: T | null; error: unknown }>) => {
+    try {
+      return await query;
+    } catch {
+      return { data: null, error: new Error("NETWORK_ERROR") };
+    }
+  };
+
   const [
     mastersRes,
     studentsRes,
@@ -33,17 +41,17 @@ export async function fetchDb(userId?: string): Promise<EumDatabase> {
     favMastersRes,
     favAcademiesRes,
   ] = await Promise.all([
-    supabase.from("masters").select("*").order("created_at"),
-    supabase.from("students").select("*, profiles!students_user_id_fkey(name, phone)"),
-    supabase.from("feedback_orders").select("*").order("created_at", { ascending: false }),
-    supabase.from("reservations").select("*").order("created_at", { ascending: false }),
-    supabase.from("student_reviews").select("*").order("created_at", { ascending: false }),
-    supabase.from("practice_records").select("*").order("created_at", { ascending: false }),
+    safe(supabase.from("masters").select("*").order("created_at")),
+    safe(supabase.from("students").select("*, profiles!students_user_id_fkey(name, phone)")),
+    safe(supabase.from("feedback_orders").select("*").order("created_at", { ascending: false })),
+    safe(supabase.from("reservations").select("*").order("created_at", { ascending: false })),
+    safe(supabase.from("student_reviews").select("*").order("created_at", { ascending: false })),
+    safe(supabase.from("practice_records").select("*").order("created_at", { ascending: false })),
     userId
-      ? supabase.from("favorite_masters").select("master_id").eq("user_id", userId)
+      ? safe(supabase.from("favorite_masters").select("master_id").eq("user_id", userId))
       : Promise.resolve({ data: [], error: null }),
     userId
-      ? supabase.from("favorite_academies").select("academy_id").eq("user_id", userId)
+      ? safe(supabase.from("favorite_academies").select("academy_id").eq("user_id", userId))
       : Promise.resolve({ data: [], error: null }),
   ]);
 

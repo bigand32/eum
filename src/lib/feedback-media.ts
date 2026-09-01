@@ -92,7 +92,7 @@ export async function uploadFeedbackMedia(
     }
 
     const ext = getFileExtension(file);
-    const storagePath = `${userId}/raw/${Date.now()}.${ext}`;
+    const storagePath = `${userId}/${Date.now()}.${ext}`;
     const contentType = getContentType(file, ext);
     const encodedPath = storagePath
       .split("/")
@@ -135,6 +135,7 @@ export async function processFeedbackMedia(
   accessToken: string,
   storagePath: string,
   mediaType: "audio" | "video",
+  orderId?: string,
 ): Promise<{ publicUrl: string; processed: boolean }> {
   const response = await fetch("/api/feedback/process-media", {
     method: "POST",
@@ -142,7 +143,7 @@ export async function processFeedbackMedia(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ storagePath, mediaType }),
+    body: JSON.stringify({ storagePath, mediaType, orderId }),
   });
 
   if (!response.ok) {
@@ -150,6 +151,16 @@ export async function processFeedbackMedia(
   }
 
   return (await response.json()) as { publicUrl: string; processed: boolean };
+}
+
+/** 업로드 완료 후 백그라운드 압축 — 사용자 대기 없음 */
+export function enqueueFeedbackMediaProcessing(
+  accessToken: string,
+  storagePath: string,
+  mediaType: "audio" | "video",
+  orderId: string,
+) {
+  void processFeedbackMedia(accessToken, storagePath, mediaType, orderId).catch(() => undefined);
 }
 
 export async function uploadPracticeBlob(

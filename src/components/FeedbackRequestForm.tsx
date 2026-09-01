@@ -6,7 +6,7 @@ import { saveFeedbackOrder } from "@/lib/db/api";
 import type { Master } from "@/lib/db/schema";
 import { useStudentId } from "@/lib/auth/use-student-id";
 import { useSession } from "@/lib/auth/use-session";
-import { formatFileSize, processFeedbackMedia, uploadFeedbackMedia } from "@/lib/feedback-media";
+import { formatFileSize, enqueueFeedbackMediaProcessing, uploadFeedbackMedia } from "@/lib/feedback-media";
 import { isVideoFile } from "@/lib/feedback-pricing";
 import {
   getPremiumFeedbackPricing,
@@ -39,9 +39,7 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
   const [messageError, setMessageError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [submitPhase, setSubmitPhase] = useState<
-    "idle" | "uploading" | "processing" | "saving"
-  >("idle");
+  const [submitPhase, setSubmitPhase] = useState<"idle" | "uploading" | "saving">("idle");
   const [paymentOpen, setPaymentOpen] = useState(false);
 
   const premiumPricing = getPremiumFeedbackPricing();
@@ -110,37 +108,11 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
       const uploadResult = await uploadFeedbackMedia(
         authUserId,
         selectedFileRef.current,
-        (percent) => setUploadProgress(Math.round(percent * 0.6)),
+        (percent) => setUploadProgress(Math.max(10, Math.round(percent * 0.85))),
       );
 
-      let mediaUrl = uploadResult.publicUrl;
-
-      if (uploadResult.needsProcessing && uploadResult.storagePath) {
-        const supabase = createClient();
-        const {
-          data: { session: authSession },
-        } = await supabase.auth.getSession();
-        const accessToken = authSession?.access_token;
-
-        if (accessToken) {
-          setSubmitPhase("processing");
-          setUploadProgress(65);
-          try {
-            const processed = await processFeedbackMedia(
-              accessToken,
-              uploadResult.storagePath,
-              mediaType,
-            );
-            mediaUrl = processed.publicUrl;
-            setUploadProgress(90);
-          } catch {
-            // 압축 실패 시 원본 URL로 저장
-          }
-        }
-      }
-
       setSubmitPhase("saving");
-      setUploadProgress(95);
+      setUploadProgress(92);
       const order = await saveFeedbackOrder({
         studentId: studentId!,
         masterId: master.id,
@@ -148,8 +120,25 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
         studentMessage: trimmedMessage,
         mediaLabel: mediaLabel || fileName!,
         mediaType,
-        mediaUrl,
+        mediaUrl: uploadResult.publicUrl,
       });
+
+      if (uploadResult.needsProcessing && uploadResult.storagePath) {
+        const supabase = createClient();
+        const {
+          data: { session: authSession },
+        } = await supabase.auth.getSession();
+        const accessToken = authSession?.access_token;
+        if (accessToken) {
+          enqueueFeedbackMediaProcessing(
+            accessToken,
+            uploadResult.storagePath,
+            mediaType,
+            order.id,
+          );
+        }
+      }
+
       setUploadProgress(100);
       setPaymentOpen(false);
       router.push(`/feedback/${order.id}?submitted=1`);
@@ -263,7 +252,7 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
 
           {isLargeFile && !submitting && (
             <p className="mt-3 text-[12px] leading-relaxed font-medium text-amber-600">
-              큰 파일은 업로드 후 서버에서 자동으로 압축해요. Wi-Fi 환경을 권장합니다.
+              큰 파일은 업로드에 시간이 걸릴 수 있어요. Wi-Fi 환경을 권장합니다.
             </p>
           )}
 
@@ -325,11 +314,7 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
           <div className="mb-3">
             <div className="mb-1.5 flex items-center justify-between text-[12px] font-semibold text-gray-500">
               <span>
-                {submitPhase === "saving"
-                  ? "요청 저장 중..."
-                  : submitPhase === "processing"
-                    ? "파일 압축 중..."
-                    : "파일 업로드 중..."}
+                {submitPhase === "saving" ? "요청 저장 중..." : "파일 업로드 중..."}
               </span>
               <span>{`${uploadProgress}%`}</span>
             </div>
@@ -351,9 +336,7 @@ export function FeedbackRequestForm({ master }: { master: Master }) {
           {submitting
             ? submitPhase === "saving"
               ? "저장 중..."
-              : submitPhase === "processing"
-                ? "압축 중..."
-                : `업로드 중 ${uploadProgress}%`
+              : `업로드 중 ${uploadProgress}%`
             : `${formatPrice(premiumPrice)}원 결제하기`}
         </button>
       </div>

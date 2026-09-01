@@ -22,30 +22,37 @@ export function useSession() {
     };
 
     const refreshSupabase = async () => {
-      const supabase = createClient();
-      const {
-        data: { session: authSession },
-      } = await supabase.auth.getSession();
+      try {
+        const supabase = createClient();
+        const {
+          data: { session: authSession },
+        } = await supabase.auth.getSession();
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (!authSession?.user) {
-        clearSession();
-        setSessionState(null);
+        if (!authSession?.user) {
+          clearSession();
+          setSessionState(null);
+          setLoading(false);
+          return;
+        }
+
+        const user = (await getCurrentAuthUser()) ?? getSession();
+        if (cancelled) return;
+
+        if (user && user.id === authSession.user.id) {
+          setSession(user);
+          setSessionState(user);
+        } else {
+          setSessionState(getSession());
+        }
         setLoading(false);
-        return;
+      } catch {
+        if (!cancelled) {
+          setSessionState(getSession());
+          setLoading(false);
+        }
       }
-
-      const user = (await getCurrentAuthUser()) ?? getSession();
-      if (cancelled) return;
-
-      if (user && user.id === authSession.user.id) {
-        setSession(user);
-        setSessionState(user);
-      } else {
-        setSessionState(getSession());
-      }
-      setLoading(false);
     };
 
     if (isSupabaseConfigured()) {
