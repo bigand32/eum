@@ -29,13 +29,19 @@ export function isAuthenticated(): boolean {
 
 export function setSession(user: AuthUser) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  const serialized = JSON.stringify(user);
+  const prev = localStorage.getItem(SESSION_KEY);
+  if (prev === serialized) return;
+  localStorage.setItem(SESSION_KEY, serialized);
   window.dispatchEvent(new CustomEvent("eum-auth-updated"));
 }
 
 export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(SESSION_KEY);
+  void import("@/lib/auth/supabase-auth").then(({ invalidateAuthUserCache }) => {
+    invalidateAuthUserCache();
+  });
   window.dispatchEvent(new CustomEvent("eum-auth-updated"));
 }
 

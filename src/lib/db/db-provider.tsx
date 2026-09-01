@@ -39,7 +39,12 @@ export function DbProvider({ children }: { children: React.ReactNode }) {
         try {
           if (isSupabaseConfigured()) {
             const session = getSession();
-            const next = await loadDb(session?.id);
+            const next = await Promise.race([
+              loadDb(session?.id),
+              new Promise<never>((_, reject) => {
+                window.setTimeout(() => reject(new Error("DB_TIMEOUT")), 8_000);
+              }),
+            ]);
             if (!cancelled && seq === refreshSeq.current) {
               setValue({ db: next, ready: true });
             }
@@ -49,7 +54,6 @@ export function DbProvider({ children }: { children: React.ReactNode }) {
             setValue({ db: getDb(), ready: true });
           }
         } catch {
-          // 네트워크 불안정·업로드 중 연결 포화 시 fetch 실패 — 기존 데이터 유지
           if (!cancelled && seq === refreshSeq.current) {
             setValue((prev) => ({ db: prev.db, ready: true }));
           }

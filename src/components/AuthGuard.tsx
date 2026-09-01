@@ -39,7 +39,22 @@ export function AuthGuard({
           return;
         }
 
-        const user = (await getCurrentAuthUser()) ?? getSession();
+        const cached = getSession();
+        const cachedComplete =
+          cached?.id === authSession.user.id &&
+          (cached.role === "master" ? Boolean(cached.masterId) : Boolean(cached.studentId));
+        if (cachedComplete && cached) {
+          if (role && cached.role !== role) {
+            setReady(false);
+            router.replace(getHomePathForRole(cached.role));
+            return;
+          }
+          setSession(cached);
+          setReady(true);
+          return;
+        }
+
+        const user = (await getCurrentAuthUser()) ?? cached;
         if (cancelled) return;
 
         if (!user || user.id !== authSession.user.id) {

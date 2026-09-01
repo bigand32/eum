@@ -9,6 +9,15 @@ type ProfileWithRelations = DbProfile & {
   masters: DbMaster[] | DbMaster | null;
 };
 
+const AUTH_USER_CACHE_MS = 30_000;
+let authUserCache: { userId: string; user: AuthUser | null; at: number } | null = null;
+let authUserInflight: { userId: string; promise: Promise<AuthUser | null> } | null = null;
+
+export function invalidateAuthUserCache() {
+  authUserCache = null;
+  authUserInflight = null;
+}
+
 function firstRelation<T>(value: T[] | T | null): T | null {
   if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -32,28 +41,55 @@ function buildAuthUserFromAuthRecord(user: User, profile: AuthUser | null): Auth
 }
 
 export async function fetchAuthUser(userId: string): Promise<AuthUser | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*, students!students_user_id_fkey(*), masters!masters_user_id_fkey(*)")
-    .eq("id", userId)
-    .maybeSingle();
+  if (
+    authUserCache?.userId === userId &&
+    Date.now() - authUserCache.at < AUTH_USER_CACHE_MS
+  ) {
+    return authUserCache.user;
+  }
 
-  if (error || !data) return null;
+  if (authUserInflight?.userId === userId) {
+    return authUserInflight.promise;
+  }
 
-  const profile = data as ProfileWithRelations;
-  const student = firstRelation(profile.students);
-  const master = firstRelation(profile.masters);
+  const promise = (async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*, students!students_user_id_fkey(*), masters!masters_user_id_fkey(*)")
+      .eq("id", userId)
+      .maybeSingle();
 
-  return {
-    id: profile.id,
-    name: profile.name,
-    email: profile.email,
-    phone: profile.phone ?? "",
-    role: profile.role as UserRole,
-    studentId: student?.id,
-    masterId: master?.id,
-  };
+    if (error || !data) {
+      authUserCache = { userId, user: null, at: Date.now() };
+      return null;
+    }
+
+    const profile = data as ProfileWithRelations;
+    const student = firstRelation(profile.students);
+    const master = firstRelation(profile.masters);
+
+    const user: AuthUser = {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone ?? "",
+      role: profile.role as UserRole,
+      studentId: student?.id,
+      masterId: master?.id,
+    };
+    authUserCache = { userId, user, at: Date.now() };
+    return user;
+  })();
+
+  authUserInflight = { userId, promise };
+  try {
+    return await promise;
+  } finally {
+    if (authUserInflight?.userId === userId) {
+      authUserInflight = null;
+    }
+  }
 }
 
 export async function loginWithSupabase(
@@ -68,6 +104,7 @@ export async function loginWithSupabase(
 
   if (error || !data.user) return null;
 
+  invalidateAuthUserCache();
   const user = await fetchAuthUser(data.user.id);
   if (user) return user;
 
@@ -76,6 +113,7 @@ export async function loginWithSupabase(
 
 export async function logoutSupabase() {
   const supabase = createClient();
+  invalidateAuthUserCache();
   await supabase.auth.signOut();
 }
 
