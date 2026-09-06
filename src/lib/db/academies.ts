@@ -11,6 +11,8 @@ export type Academy = {
   lat: number;
   lng: number;
   address: string;
+  /** 운영시간 안내 (줄 단위) */
+  hours: string[];
 };
 
 export const ACADEMIES: Academy[] = [
@@ -28,6 +30,7 @@ export const ACADEMIES: Academy[] = [
     lat: 37.4979,
     lng: 127.0276,
     address: "서울 강남구 강남대로 396 한음빌딩 3층",
+    hours: ["평일 10:00 - 22:00", "토요일 10:00 - 18:00", "일요일 휴무"],
   },
   {
     id: "vocal-studio",
@@ -41,6 +44,7 @@ export const ACADEMIES: Academy[] = [
     lat: 37.5004,
     lng: 127.0365,
     address: "서울 강남구 역삼동 123-45",
+    hours: ["매일 11:00 - 21:00", "공휴일 별도 문의"],
   },
 ];
 

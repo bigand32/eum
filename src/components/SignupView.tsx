@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/session";
 import type { UserRole } from "@/lib/auth/session";
 import { loadMasterSignupDraft, saveMasterSignupDraft } from "@/lib/auth/signup-draft";
+import { checkNicknameAvailable } from "@/lib/db/api";
 
 const inputClass =
   "h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500";
@@ -29,6 +30,7 @@ export function SignupView() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nicknameHint, setNicknameHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -75,6 +77,19 @@ export function SignupView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateBasicFields()) return;
+
+    if (role === "student") {
+      try {
+        const available = await checkNicknameAvailable(name.trim(), "student");
+        if (!available) {
+          setError("이미 사용 중인 닉네임이에요. 다른 이름을 입력해 주세요.");
+          return;
+        }
+      } catch {
+        setError("닉네임 확인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+    }
 
     if (role === "master") {
       saveMasterSignupDraft({
@@ -153,7 +168,7 @@ export function SignupView() {
         <div className="space-y-4">
           <div>
             <label htmlFor="name" className="mb-2 block text-[13px] font-bold text-gray-700">
-              이름
+              {role === "student" ? "닉네임" : "이름"}
             </label>
             <input
               id="name"
@@ -162,10 +177,28 @@ export function SignupView() {
               onChange={(e) => {
                 setName(e.target.value);
                 setError(null);
+                setNicknameHint(null);
               }}
-              placeholder="실명 또는 닉네임"
+              onBlur={() => {
+                if (role !== "student" || !name.trim()) return;
+                void checkNicknameAvailable(name.trim(), "student")
+                  .then((ok) => {
+                    setNicknameHint(ok ? "사용 가능한 닉네임이에요." : "이미 사용 중인 닉네임이에요.");
+                  })
+                  .catch(() => setNicknameHint(null));
+              }}
+              placeholder={role === "student" ? "다른 사람에게 보일 닉네임" : "실명 또는 닉네임"}
               className={inputClass}
             />
+            {nicknameHint && role === "student" && (
+              <p
+                className={`mt-1.5 text-[12px] font-medium ${
+                  nicknameHint.includes("가능") ? "text-emerald-600" : "text-red-500"
+                }`}
+              >
+                {nicknameHint}
+              </p>
+            )}
           </div>
 
           <div>

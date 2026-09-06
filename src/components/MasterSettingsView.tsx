@@ -14,14 +14,30 @@ const menuItems = [
     icon: "fa-user-pen",
     label: "프로필 수정",
     desc: "소개 · 태그 · 경력",
-    color: "bg-brand-50 text-brand-500",
   },
   {
     href: "/master/settings/pricing",
     icon: "fa-won-sign",
     label: "요금 설정",
-    desc: "피드백 · 전화 · 방문 상담",
-    color: "bg-indigo-50 text-[#4f46e5]",
+    desc: "피드백 · 전화 · 화상 · 방문",
+  },
+  {
+    href: "/master/settings/off-days",
+    icon: "fa-calendar-check",
+    label: "예약 일정",
+    desc: "휴무 요일 · 특정일 · 시간대",
+  },
+  {
+    href: "/master/settings/packages",
+    icon: "fa-play",
+    label: "온라인 강의",
+    desc: "주차별 영상 · 제목 · 설명",
+  },
+  {
+    href: "/master/settings/coupons",
+    icon: "fa-ticket",
+    label: "쿠폰 발급",
+    desc: "할인 금액 · 수량 설정",
   },
 ] as const;
 
@@ -43,23 +59,22 @@ export function MasterSettingsView() {
         <h1 className="text-center text-[16px] font-bold text-gray-900">설정</h1>
       </header>
 
-      <main className="flex flex-col pb-28">
+      <main className="flex flex-col pb-4">
         <section className="px-6 pt-6 pb-4">
-          <div className="flex items-center gap-5">
+          <div className="flex items-start gap-4">
             <div className="relative shrink-0">
               <img
                 src={master?.avatarUrl}
                 alt=""
                 className="h-20 w-20 rounded-full border border-gray-100 object-cover shadow-sm"
               />
-              <div className="absolute right-0 bottom-0 h-5 w-5 rounded-full border-2 border-white bg-green-500" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-2">
                 <span className="rounded-sm bg-gray-900 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white">
                   PRO
                 </span>
-                <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
+                <h2 className="truncate text-2xl font-extrabold tracking-tight text-gray-900">
                   {master?.name ?? session?.name ?? "마스터"}
                 </h2>
               </div>
@@ -71,6 +86,16 @@ export function MasterSettingsView() {
                 평균 {master?.responseTimeLabel ?? "1시간"} 내 응답
               </p>
             </div>
+            {master && (
+              <Link
+                href={`/masters/${master.id}`}
+                aria-label="프로필 미리보기"
+                title="학생에게 보이는 화면"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-surface text-gray-600 transition hover:border-gray-200 hover:bg-white hover:text-gray-900"
+              >
+                <i className="fa-solid fa-arrow-up-right-from-square text-[13px]" />
+              </Link>
+            )}
           </div>
 
           {master?.bio && (
@@ -121,9 +146,7 @@ export function MasterSettingsView() {
                 href={item.href}
                 className="flex items-center gap-4 rounded-[16px] border border-gray-100 bg-white p-4 shadow-soft transition hover:border-gray-200"
               >
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${item.color}`}
-                >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-gray-500">
                   <i className={`fa-solid ${item.icon}`} />
                 </div>
                 <div className="flex-1">
@@ -134,28 +157,12 @@ export function MasterSettingsView() {
               </Link>
             ))}
 
-            {master && (
-              <Link
-                href={`/masters/${master.id}`}
-                className="flex items-center gap-4 rounded-[16px] border border-gray-100 bg-white p-4 shadow-soft transition hover:border-gray-200"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-500">
-                  <i className="fa-solid fa-eye" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[15px] font-bold text-gray-900">내 프로필 미리보기</p>
-                  <p className="text-[12px] text-gray-500">학생에게 보이는 화면</p>
-                </div>
-                <i className="fa-solid fa-chevron-right text-[12px] text-gray-300" />
-              </Link>
-            )}
-
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="flex items-center gap-4 rounded-[16px] border border-gray-100 bg-white p-4 text-left shadow-soft transition hover:border-red-100"
+              className="flex items-center gap-4 rounded-[16px] border border-gray-100 bg-white p-4 text-left shadow-soft transition hover:border-gray-200"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-gray-500">
                 <i className="fa-solid fa-arrow-right-from-bracket" />
               </div>
               <div className="flex-1">

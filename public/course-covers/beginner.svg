@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="0.55" stop-color="#1E3A5F"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="520" y1="40" x2="760" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60A5FA" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#bg)"/>
+  <circle cx="660" cy="120" r="180" fill="url(#glow)"/>
+  <circle cx="120" cy="420" r="140" fill="#FFFFFF" fill-opacity="0.05"/>
+  <rect x="48" y="48" width="86" height="32" rx="8" fill="#FFFFFF" fill-opacity="0.16"/>
+  <text x="91" y="70" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">BEGINNER</text>
+  <text x="48" y="210" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="54" font-weight="800">초급</text>
+  <text x="48" y="275" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="42" font-weight="700">4주 완성</text>
+  <text x="48" y="330" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="20" font-weight="500">기초 발성부터 한 곡까지</text>
+  <circle cx="640" cy="340" r="54" fill="#FFFFFF" fill-opacity="0.12"/>
+  <path d="M626 340 L656 322 V358 Z" fill="#FFFFFF"/>
+</svg>

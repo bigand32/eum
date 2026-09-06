@@ -11,7 +11,7 @@ const tabs: {
   badge?: boolean;
 }[] = [
   { href: "/", label: "홈", icon: "fa-house", solid: true },
-  { href: "/search", label: "탐색", icon: "fa-magnifying-glass", solid: true },
+  { href: "/search", label: "마스터", icon: "fa-magnifying-glass", solid: true },
   { href: "/reservation", label: "예약", icon: "fa-calendar-check", solid: false },
   { href: "/daily", label: "일지", icon: "fa-book-open", solid: true, badge: true },
   { href: "/mypage", label: "마이", icon: "fa-user", solid: false },
@@ -22,12 +22,15 @@ export function BottomNav() {
   const hideNav =
     pathname === "/onboarding" ||
     /^\/masters\/[^/]+\/(feedback|reservation)/.test(pathname) ||
-    /^\/masters\/[^/]+$/.test(pathname);
+    /^\/masters\/[^/]+$/.test(pathname) ||
+    /^\/feedback\//.test(pathname) ||
+    /^\/challenges\/[^/]+$/.test(pathname) ||
+    pathname === "/vocal-ai";
 
   if (hideNav) return null;
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-[70] flex w-full max-w-[400px] -translate-x-1/2 justify-between border-t border-gray-100 bg-white/90 px-6 py-2 pb-8 backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-1/2 z-[70] flex w-full max-w-[400px] -translate-x-1/2 justify-between border-t border-gray-100 bg-white/90 px-6 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (

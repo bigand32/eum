@@ -25,8 +25,13 @@ export function OnboardingView() {
 
   const finish = () => {
     setFinishing(true);
-    saveOnboardingPrefs({ genre, problems, style });
-    setTimeout(() => router.replace("/"), 1200);
+    void saveOnboardingPrefs({ genre, problems, style })
+      .then(() => {
+        setTimeout(() => router.replace("/"), 1200);
+      })
+      .catch(() => {
+        setFinishing(false);
+      });
   };
 
   if (finishing) {

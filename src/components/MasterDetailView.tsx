@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { AppImage } from "@/components/AppImage";
 import { useDb, useDbReady } from "@/lib/db/use-db";
 import { MasterProductCards } from "@/components/MasterProductCards";
+import { MasterPackageSection } from "@/components/MasterPackageSection";
+import { MasterCouponDownloadSection } from "@/components/MasterCouponDownloadSection";
 
 function StarRow({ count }: { count: number }) {
   return (
@@ -40,7 +43,14 @@ export function MasterDetailView({ masterId }: { masterId: string }) {
   return (
     <div className="bg-white pb-[76px]">
       <div className="relative h-[260px] bg-gray-200">
-        <img src={master.heroImageUrl} alt="" className="h-full w-full object-cover" />
+        <AppImage
+          src={master.heroImageUrl}
+          alt=""
+          fill
+          priority
+          className="object-cover"
+          sizes="(max-width: 430px) 100vw, 430px"
+        />
         <div className="absolute inset-0 bg-black/10" />
 
         <header className="absolute top-0 z-10 flex w-full items-center justify-between px-5 py-4">
@@ -60,11 +70,16 @@ export function MasterDetailView({ masterId }: { masterId: string }) {
           </button>
         </header>
 
-        <img
-          src={master.avatarUrl}
-          alt={master.name}
-          className="absolute -bottom-10 right-6 z-20 h-[88px] w-[88px] rounded-full border-4 border-white bg-white object-cover shadow-sm"
-        />
+        <div className="absolute -bottom-10 right-6 z-20 h-[88px] w-[88px] overflow-hidden rounded-full border-4 border-white bg-white shadow-sm">
+          <AppImage
+            src={master.avatarUrl}
+            alt={master.name}
+            width={88}
+            height={88}
+            className="h-full w-full object-cover"
+            sizes="88px"
+          />
+        </div>
       </div>
 
       <main className="flex flex-col">
@@ -122,14 +137,9 @@ export function MasterDetailView({ masterId }: { masterId: string }) {
           </div>
         </section>
 
-        <section id="coaching-products" className="border-b border-gray-50 py-8 pl-6">
-          <div className="mb-4 pr-6">
-            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">제공 서비스 · 요금</h3>
-            <p className="mt-1 text-[13px] font-medium text-gray-400">
-              9/15~10/30 얼리버드 39,000원 · 이후 69,000원
-            </p>
-          </div>
+        <MasterCouponDownloadSection masterId={masterId} />
 
+        <section id="coaching-products" className="border-b border-gray-50 py-8 pl-6">
           <MasterProductCards masterId={masterId} />
 
           <div className="mt-4 mr-6 flex items-center justify-center gap-2 rounded-[12px] bg-brand-50 p-3 text-[12px] font-medium text-brand-500">
@@ -137,6 +147,8 @@ export function MasterDetailView({ masterId }: { masterId: string }) {
             불건전한 리뷰나 허위 멘토링 이력은 등록되지 않아요
           </div>
         </section>
+
+        <MasterPackageSection masterId={masterId} />
 
         <section className="py-8 pl-6">
           <div className="mb-4 flex items-center justify-between pr-6">

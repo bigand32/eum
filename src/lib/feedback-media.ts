@@ -188,6 +188,34 @@ export async function uploadPracticeBlob(
   return result.publicUrl;
 }
 
+export async function uploadPackageWeekVideo(
+  userId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<string> {
+  if (!isVideoFile(file)) {
+    throw new Error("VIDEO_REQUIRED");
+  }
+  const result = await uploadFeedbackMedia(userId, file, onProgress);
+  return result.publicUrl;
+}
+
+/** 온라인 강의 카드 썸네일 이미지 */
+export async function uploadPackageCover(
+  userId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("IMAGE_REQUIRED");
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error("IMAGE_TOO_LARGE");
+  }
+  const result = await uploadFeedbackMedia(userId, file, onProgress);
+  return result.publicUrl;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;

@@ -9,6 +9,7 @@ export async function savePracticeRecording(input: {
   blob: Blob;
   durationSec: number;
   title: string;
+  memo?: string;
 }): Promise<PracticeRecord> {
   const user = await getCurrentAuthUser();
   const authUserId = input.authUserId ?? user?.id;
@@ -29,6 +30,7 @@ export async function savePracticeRecording(input: {
   return savePracticeRecord({
     studentId,
     title: input.title,
+    memo: input.memo,
     durationSec: input.durationSec,
     mediaUrl,
   });

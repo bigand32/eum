@@ -11,10 +11,17 @@ export function StudentLayoutClient({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const isCheckout = /^\/masters\/[^/]+\/(feedback|reservation)/.test(pathname);
   const isMasterDetail = /^\/masters\/[^/]+$/.test(pathname);
-  const hideNav = isCheckout || isMasterDetail || pathname === "/onboarding";
+  const isFeedbackDetail = /^\/feedback\//.test(pathname);
+  const hideNav =
+    isCheckout ||
+    isMasterDetail ||
+    isFeedbackDetail ||
+    pathname === "/onboarding" ||
+    /^\/challenges\/[^/]+$/.test(pathname) ||
+    pathname === "/vocal-ai";
 
   return (
-    <AuthGuard role="student">
+    <AuthGuard roles={isMasterDetail ? ["student", "master"] : ["student"]}>
       <DbLoadingOverlay />
       <OnboardingRedirect />
       <AppFrame className={hideNav ? "pb-0" : "pb-28"}>

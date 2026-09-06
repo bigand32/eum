@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     if (orderId) {
       const { data: order } = await admin
         .from("feedback_orders")
-        .select("id, student_id")
+        .select("id, student_id, master_id")
         .eq("id", orderId)
         .maybeSingle();
 
@@ -106,6 +106,19 @@ export async function POST(request: NextRequest) {
 
         if (student?.user_id === user.id) {
           await admin.from("feedback_orders").update({ media_url: publicUrl }).eq("id", orderId);
+        } else {
+          const { data: master } = await admin
+            .from("masters")
+            .select("user_id")
+            .eq("id", order.master_id)
+            .maybeSingle();
+
+          if (master?.user_id === user.id) {
+            await admin
+              .from("feedback_orders")
+              .update({ reply_media_url: publicUrl })
+              .eq("id", orderId);
+          }
         }
       }
     }

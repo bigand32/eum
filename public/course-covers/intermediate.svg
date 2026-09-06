@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="0.5" stop-color="#312E81"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#bg)"/>
+  <circle cx="680" cy="90" r="160" fill="#A78BFA" fill-opacity="0.25"/>
+  <rect x="48" y="48" width="110" height="32" rx="8" fill="#FFFFFF" fill-opacity="0.16"/>
+  <text x="103" y="70" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">INTERMEDIATE</text>
+  <text x="48" y="210" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="54" font-weight="800">중급</text>
+  <text x="48" y="275" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="42" font-weight="700">실력 업그레이드</text>
+  <text x="48" y="330" fill="#DDD6FE" font-family="Arial, sans-serif" font-size="20" font-weight="500">표현력 · 믹스보이스 집중</text>
+  <circle cx="640" cy="340" r="54" fill="#FFFFFF" fill-opacity="0.12"/>
+  <path d="M626 340 L656 322 V358 Z" fill="#FFFFFF"/>
+</svg>

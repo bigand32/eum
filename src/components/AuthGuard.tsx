@@ -3,106 +3,88 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { UserRole } from "@/lib/auth/session";
-import {
-  getHomePathForRole,
-  getSession,
-  isAuthenticated,
-  setSession,
-} from "@/lib/auth/session";
-import { getCurrentAuthUser } from "@/lib/auth/supabase-auth";
+import { getHomePathForRole } from "@/lib/auth/session";
+import { useSession } from "@/lib/auth/use-session";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/client";
 
 export function AuthGuard({
   children,
   role,
+  roles,
 }: {
   children: React.ReactNode;
   role?: UserRole;
+  /** 여러 역할 허용 (예: 마스터 공개 프로필) */
+  roles?: UserRole[];
 }) {
   const router = useRouter();
+  const { session, loading } = useSession();
   const [ready, setReady] = useState(false);
+  const allowedKey = (roles?.length ? [...roles].sort().join(",") : role) ?? "";
 
   useEffect(() => {
     let cancelled = false;
+    let waitTimer: number | null = null;
 
-    const check = async () => {
-      if (isSupabaseConfigured()) {
-        const supabase = createClient();
-        const {
-          data: { session: authSession },
-        } = await supabase.auth.getSession();
+    const run = async () => {
+      if (loading) {
+        setReady(false);
+        return;
+      }
 
-        if (!authSession?.user) {
-          setReady(false);
-          router.replace("/login");
-          return;
-        }
-
-        const cached = getSession();
-        const cachedComplete =
-          cached?.id === authSession.user.id &&
-          (cached.role === "master" ? Boolean(cached.masterId) : Boolean(cached.studentId));
-        if (cachedComplete && cached) {
-          if (role && cached.role !== role) {
-            setReady(false);
-            router.replace(getHomePathForRole(cached.role));
-            return;
+      if (!session) {
+        setReady(false);
+        if (isSupabaseConfigured()) {
+          try {
+            const supabase = createClient();
+            const {
+              data: { session: authSession },
+            } = await supabase.auth.getSession();
+            if (cancelled) return;
+            if (authSession?.user) {
+              // 로컬 세션 복구 대기 (로그인↔홈 루프 방지)
+              window.dispatchEvent(new CustomEvent("eum-auth-resync"));
+              waitTimer = window.setTimeout(() => {
+                if (!cancelled) router.replace("/login");
+              }, 4_000);
+              return;
+            }
+          } catch {
+            // fall through
           }
-          setSession(cached);
-          setReady(true);
-          return;
         }
+        if (!cancelled) router.replace("/login");
+        return;
+      }
 
-        const user = (await getCurrentAuthUser()) ?? cached;
-        if (cancelled) return;
+      if (allowedKey) {
+        const allowed = allowedKey.split(",") as UserRole[];
+        const canAccess =
+          allowed.includes(session.role) ||
+          (allowed.includes("master") && Boolean(session.masterId)) ||
+          (allowed.includes("student") && Boolean(session.studentId));
 
-        if (!user || user.id !== authSession.user.id) {
+        if (!canAccess) {
           setReady(false);
-          router.replace("/login");
+          if (!cancelled) router.replace(getHomePathForRole(session.role));
           return;
         }
-
-        setSession(user);
-
-        if (role && user.role !== role) {
-          setReady(false);
-          router.replace(getHomePathForRole(user.role));
-          return;
-        }
-
-        setReady(true);
-        return;
       }
 
-      if (!isAuthenticated()) {
-        setReady(false);
-        router.replace("/login");
-        return;
-      }
-
-      const session = getSession();
-      if (!session) return;
-
-      if (role && session.role !== role) {
-        setReady(false);
-        router.replace(getHomePathForRole(session.role));
-        return;
-      }
-
-      setReady(true);
+      if (!cancelled) setReady(true);
     };
 
-    void check();
-    const handler = () => void check();
-    window.addEventListener("eum-auth-updated", handler);
+    void run();
     return () => {
       cancelled = true;
-      window.removeEventListener("eum-auth-updated", handler);
+      if (waitTimer) window.clearTimeout(waitTimer);
     };
-  }, [router, role]);
+  }, [session, loading, allowedKey, router]);
 
   if (!ready) {
+    // 세션이 있으면 가드로 전체를 막지 않고 children 렌더 (DB 스켈레톤과 병행)
+    if (session) return children;
     return (
       <div className="flex min-h-dvh items-center justify-center bg-white">
         <div className="text-[14px] font-medium text-gray-400">로딩 중…</div>

@@ -4,7 +4,13 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { useSession } from "@/lib/auth/use-session";
 import { useStudentId } from "@/lib/auth/use-student-id";
 import { savePracticeRecording, practiceSaveErrorMessage } from "@/lib/practice-recording";
-import { getMediaDuration, isVideoFile } from "@/lib/feedback-pricing";
+import {
+  getMediaDuration,
+  isMediaDurationOverLimit,
+  isMediaFile,
+  isVideoFile,
+  mediaDurationLimitMessage,
+} from "@/lib/feedback-pricing";
 import { markAttendanceToday } from "@/lib/attendance";
 import { formatTime } from "@/lib/timestamp-comments";
 
@@ -13,7 +19,6 @@ export function RecordModal() {
   const { session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
   const durationRef = useRef(0);
 
   const [open, setOpen] = useState(false);
@@ -21,27 +26,29 @@ export function RecordModal() {
   const [error, setError] = useState<string | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [selectedFile, setSelectedFile] = useState<Blob | null>(null);
-  const [isVideo, setIsVideo] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [playbackPlaying, setPlaybackPlaying] = useState(false);
+  const [previewIsVideo, setPreviewIsVideo] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [memo, setMemo] = useState("");
 
   const clearPreview = useCallback(() => {
-    playbackAudioRef.current?.pause();
-    setPlaybackPlaying(false);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setSelectedFile(null);
-    setIsVideo(false);
+    setPreviewIsVideo(true);
     setElapsedSec(0);
+    setMemo("");
     durationRef.current = 0;
   }, [previewUrl]);
 
   const applyFile = useCallback(async (file: File) => {
+    if (!isMediaFile(file)) {
+      setError("영상 또는 음원 파일만 올릴 수 있어요. (mp4, mov, mp3, m4a 등)");
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    playbackAudioRef.current?.pause();
-    setPlaybackPlaying(false);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
@@ -58,8 +65,13 @@ export function RecordModal() {
           durationSec = 1;
         }
 
+        if (isMediaDurationOverLimit(durationSec)) {
+          setError(mediaDurationLimitMessage());
+          return;
+        }
+
         setSelectedFile(file);
-        setIsVideo(isVideoFile(file));
+        setPreviewIsVideo(isVideoFile(file));
         setPreviewUrl(URL.createObjectURL(file));
         setElapsedSec(durationSec);
         durationRef.current = durationSec;
@@ -102,6 +114,7 @@ export function RecordModal() {
           blob: selectedFile,
           durationSec,
           title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
+          memo: memo.trim() || undefined,
         });
         markAttendanceToday();
         closeModal();
@@ -130,7 +143,7 @@ export function RecordModal() {
           onClick={openModal}
           className="w-full rounded-xl bg-gray-900 py-3.5 text-[15px] font-bold text-white hover:bg-gray-800"
         >
-          지금 연습 영상 올리기
+          지금 연습 올리기
         </button>
       )}
 
@@ -151,32 +164,32 @@ export function RecordModal() {
               </div>
 
               <p className="mb-4 text-[12px] leading-relaxed text-gray-500">
-                연습 영상을 촬영하거나, 갤러리에서 영상·음원 파일을 선택해 주세요.
+                연습 영상·음원은 최대 5분까지. 촬영·선택해 일지에 남겨 주세요.
               </p>
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3"
+                accept="video/*,audio/*,.mov,.mp4,.mp3,.m4a,.wav,.aac"
                 className="hidden"
                 onChange={handleFileInputChange}
               />
               <input
                 ref={cameraInputRef}
                 type="file"
-                accept="video/*"
+                accept="video/*,audio/*"
                 capture="environment"
                 className="hidden"
                 onChange={handleFileInputChange}
               />
 
               {!selectedFile && (
-                <>
+                <div className="flex flex-col gap-3">
                   <button
                     type="button"
                     disabled={loading || saving}
                     onClick={() => cameraInputRef.current?.click()}
-                    className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 text-[15px] font-bold text-white hover:bg-gray-800 disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 text-[15px] font-bold text-white hover:bg-gray-800 disabled:opacity-60"
                   >
                     <i className="fa-solid fa-video" />
                     카메라로 촬영하기
@@ -185,11 +198,12 @@ export function RecordModal() {
                     type="button"
                     disabled={loading || saving}
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full rounded-xl border border-gray-200 py-3 text-[14px] font-semibold text-gray-600 disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-3.5 text-[15px] font-bold text-gray-800 hover:bg-gray-50 disabled:opacity-60"
                   >
-                    갤러리에서 영상·음원 선택
+                    <i className="fa-solid fa-photo-film" />
+                    영상 · 음원 선택
                   </button>
-                </>
+                </div>
               )}
 
               {loading && (
@@ -203,47 +217,30 @@ export function RecordModal() {
               {selectedFile && selectedFile.size > 0 && (
                 <div className="mt-4">
                   <div className="mb-3 rounded-[16px] bg-surface p-4">
-                    {isVideo && previewUrl ? (
-                      <video
-                        src={previewUrl}
-                        controls
-                        playsInline
-                        className="mb-3 w-full rounded-xl bg-black"
-                      />
-                    ) : (
-                      <div className="mb-3 flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (playbackPlaying) {
-                              playbackAudioRef.current?.pause();
-                              setPlaybackPlaying(false);
-                              return;
-                            }
-                            playbackAudioRef.current?.pause();
-                            const audio = new Audio(previewUrl ?? URL.createObjectURL(selectedFile));
-                            playbackAudioRef.current = audio;
-                            void audio.play();
-                            setPlaybackPlaying(true);
-                            audio.onended = () => setPlaybackPlaying(false);
-                          }}
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white"
-                        >
-                          <i
-                            className={`fa-solid ${playbackPlaying ? "fa-pause" : "fa-play"} text-[12px] ${playbackPlaying ? "" : "ml-0.5"}`}
-                          />
-                        </button>
-                        <div>
-                          <p className="text-[13px] font-bold text-gray-900">미리듣기</p>
-                          <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
-                        </div>
-                      </div>
-                    )}
+                    {previewUrl &&
+                      (previewIsVideo ? (
+                        <video
+                          src={previewUrl}
+                          controls
+                          playsInline
+                          className="mb-3 w-full rounded-xl bg-black"
+                        />
+                      ) : (
+                        <audio src={previewUrl} controls className="mb-3 w-full" />
+                      ))}
                     <p className="text-[13px] font-bold text-gray-900">
-                      {isVideo ? "선택한 연습 영상" : "선택한 연습 음원"}
+                      선택한 연습 {previewIsVideo ? "영상" : "음원"}
                     </p>
                     <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
                   </div>
+                  <textarea
+                    value={memo}
+                    onChange={(e) => setMemo(e.target.value)}
+                    placeholder="오늘 연습 메모 (선택)"
+                    maxLength={500}
+                    rows={3}
+                    className="mb-3 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none"
+                  />
                   <button
                     type="button"
                     disabled={saving}
@@ -258,7 +255,7 @@ export function RecordModal() {
                     onClick={handleSave}
                     className="w-full rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-600 disabled:opacity-50"
                   >
-                    {saving ? "저장 중..." : "일지에 저장하기 (+300P)"}
+                    {saving ? "저장 중..." : "일지에 저장하기"}
                   </button>
                 </div>
               )}

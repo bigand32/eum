@@ -1,14 +1,25 @@
 import type {
   EumDatabase,
   FeedbackOrder,
+  LessonMode,
   Master,
+  MasterPackage,
   MasterPricing,
+  PackageLevel,
+  PackagePurchase,
+  PackageWeek,
   Reservation,
   TimestampComment,
+  Weekday,
 } from "./schema";
+import { DEFAULT_BOOKING_TIMES, DEFAULT_OFF_WEEKDAYS } from "./schema";
 import { SEED_DB } from "./seed";
 
 const STORAGE_KEY = "eum_db_v1";
+const TIME_RE = /^\d{2}:\d{2}$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Supabase 미설정 시에만 사용하는 로컬 데모 저장소 */
 
 function normalizeMaster(stored: Master, seed?: Master): Master {
   const legacy = stored.pricing as MasterPricing & {
@@ -33,6 +44,12 @@ function normalizeMaster(stored: Master, seed?: Master): Master {
       (stored.pricing as { feedbackExtraPerMinute?: number } | undefined)?.feedbackExtraPerMinute ??
       seed?.pricing.feedbackExtraPer5Min ??
       2000,
+    feedbackAdditionalPrice:
+      stored.pricing?.feedbackAdditionalPrice ??
+      seed?.pricing.feedbackAdditionalPrice ??
+      stored.pricing?.feedbackPrice ??
+      seed?.pricing.feedbackPrice ??
+      69000,
   };
 
   return {
@@ -43,7 +60,38 @@ function normalizeMaster(stored: Master, seed?: Master): Master {
     rankLabel: stored.rankLabel ?? seed?.rankLabel,
     phoneNumber: stored.phoneNumber ?? seed?.phoneNumber ?? "",
     pricing,
+    offWeekdays: normalizeLocalOffWeekdays(
+      stored.offWeekdays ?? seed?.offWeekdays,
+    ),
+    bookingTimes: normalizeLocalBookingTimes(
+      stored.bookingTimes ?? seed?.bookingTimes,
+    ),
+    offDates: normalizeLocalOffDates(stored.offDates ?? seed?.offDates),
   };
+}
+
+function normalizeLocalOffWeekdays(raw: Weekday[] | number[] | undefined): Weekday[] {
+  if (!raw?.length) return [...DEFAULT_OFF_WEEKDAYS];
+  const cleaned = raw
+    .map((n) => Math.trunc(n))
+    .filter((n): n is Weekday => n >= 0 && n <= 6);
+  if (cleaned.length === 0 || cleaned.length >= 7) return [...DEFAULT_OFF_WEEKDAYS];
+  return [...new Set(cleaned)] as Weekday[];
+}
+
+function normalizeLocalBookingTimes(raw: string[] | undefined): string[] {
+  if (!raw?.length) return [...DEFAULT_BOOKING_TIMES];
+  const cleaned = [
+    ...new Set(raw.map((t) => t.trim()).filter((t) => TIME_RE.test(t))),
+  ].sort();
+  return cleaned.length > 0 ? cleaned : [...DEFAULT_BOOKING_TIMES];
+}
+
+function normalizeLocalOffDates(raw: string[] | undefined): string[] {
+  if (!raw?.length) return [];
+  return [
+    ...new Set(raw.map((d) => d.trim().slice(0, 10)).filter((d) => DATE_RE.test(d))),
+  ].sort();
 }
 
 function normalizeDb(db: EumDatabase): EumDatabase {
@@ -71,6 +119,10 @@ function normalizeDb(db: EumDatabase): EumDatabase {
       : SEED_DB.favoriteAcademyIds,
     studentReviews: db.studentReviews?.length ? db.studentReviews : SEED_DB.studentReviews,
     practiceRecords: db.practiceRecords ?? SEED_DB.practiceRecords ?? [],
+    masterCoupons: db.masterCoupons ?? SEED_DB.masterCoupons ?? [],
+    studentCouponClaims: db.studentCouponClaims ?? SEED_DB.studentCouponClaims ?? [],
+    masterPackages: db.masterPackages ?? SEED_DB.masterPackages ?? [],
+    packagePurchases: db.packagePurchases ?? SEED_DB.packagePurchases ?? [],
   };
 }
 
@@ -93,6 +145,13 @@ function saveDb(db: EumDatabase) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
   window.dispatchEvent(new CustomEvent("eum-db-updated"));
+  try {
+    const bc = new BroadcastChannel("eum-db");
+    bc.postMessage({ type: "db-updated", at: Date.now() });
+    bc.close();
+  } catch {
+    // ignore
+  }
 }
 
 export function getDb(): EumDatabase {
@@ -112,10 +171,13 @@ export function updateMasterPricing(
   patch: Pick<
     MasterPricing,
     | "feedbackPrice"
+    | "feedbackAdditionalPrice"
     | "phonePrice15Min"
     | "phonePrice30Min"
     | "visitPrice"
     | "visitDurationMin"
+    | "feedbackIncludedMin"
+    | "feedbackExtraPer5Min"
   >,
 ): Master | undefined {
   const db = loadDb();
@@ -130,6 +192,50 @@ export function updateMasterPricing(
   return master;
 }
 
+export function updateMasterOffWeekdaysLocal(
+  masterId: string,
+  offWeekdays: Weekday[],
+): Master | undefined {
+  const db = loadDb();
+  const master = db.masters.find((m) => m.id === masterId);
+  if (!master) return undefined;
+  master.offWeekdays = normalizeLocalOffWeekdays(offWeekdays);
+  saveDb(db);
+  return master;
+}
+
+export function updateMasterBookingTimesLocal(
+  masterId: string,
+  bookingTimes: string[],
+): Master | undefined {
+  const db = loadDb();
+  const master = db.masters.find((m) => m.id === masterId);
+  if (!master) return undefined;
+  master.bookingTimes = normalizeLocalBookingTimes(bookingTimes);
+  saveDb(db);
+  return master;
+}
+
+export function updateMasterScheduleLocal(
+  masterId: string,
+  patch: { offWeekdays?: Weekday[]; bookingTimes?: string[]; offDates?: string[] },
+): Master | undefined {
+  const db = loadDb();
+  const master = db.masters.find((m) => m.id === masterId);
+  if (!master) return undefined;
+  if (patch.offWeekdays) {
+    master.offWeekdays = normalizeLocalOffWeekdays(patch.offWeekdays);
+  }
+  if (patch.bookingTimes) {
+    master.bookingTimes = normalizeLocalBookingTimes(patch.bookingTimes);
+  }
+  if (patch.offDates) {
+    master.offDates = normalizeLocalOffDates(patch.offDates);
+  }
+  saveDb(db);
+  return master;
+}
+
 export function createFeedbackOrder(input: {
   studentId: string;
   masterId: string;
@@ -140,6 +246,7 @@ export function createFeedbackOrder(input: {
   mediaDurationSec?: number;
   extraDurationFee?: number;
   mediaUrl?: string;
+  practiceRecordId?: string;
 }): FeedbackOrder {
   const db = loadDb();
   const order: FeedbackOrder = {
@@ -176,6 +283,30 @@ export function createReservation(input: {
   return reservation;
 }
 
+export function createPackagePurchaseLocal(input: {
+  studentId: string;
+  masterId: string;
+  packageId: string;
+  mode: LessonMode;
+  priceAtPurchase: number;
+  packageTitle: string;
+  couponClaimId?: string;
+}): PackagePurchase {
+  const db = loadDb();
+  const purchase: PackagePurchase = {
+    id: `pkg-buy-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    ...input,
+  };
+  db.packagePurchases.unshift(purchase);
+  if (input.couponClaimId) {
+    const claim = db.studentCouponClaims.find((c) => c.id === input.couponClaimId);
+    if (claim) claim.usedAt = new Date().toISOString();
+  }
+  saveDb(db);
+  return purchase;
+}
+
 export function getFeedbackOrder(id: string): FeedbackOrder | undefined {
   return loadDb().feedbackOrders.find((o) => o.id === id);
 }
@@ -190,7 +321,14 @@ export function getFeedbackOrdersForMaster(masterId: string): FeedbackOrder[] {
 
 export function completeFeedbackOrder(
   orderId: string,
-  payload: { timestampComments: TimestampComment[]; masterSummary: string },
+  payload: {
+    timestampComments: TimestampComment[];
+    masterSummary: string;
+    recommendedPackageId?: string;
+    replyMediaUrl?: string;
+    replyMediaType?: "audio" | "video";
+    replyMediaLabel?: string;
+  },
 ): FeedbackOrder | undefined {
   const db = loadDb();
   const order = db.feedbackOrders.find((o) => o.id === orderId);
@@ -198,6 +336,10 @@ export function completeFeedbackOrder(
   order.status = "completed";
   order.timestampComments = payload.timestampComments;
   order.masterSummary = payload.masterSummary;
+  order.recommendedPackageId = payload.recommendedPackageId;
+  order.replyMediaUrl = payload.replyMediaUrl;
+  order.replyMediaType = payload.replyMediaType;
+  order.replyMediaLabel = payload.replyMediaLabel;
   order.completedAt = new Date().toISOString();
   saveDb(db);
   return order;
@@ -215,7 +357,18 @@ export function markFeedbackInReviewLocal(orderId: string): FeedbackOrder | unde
 export function updateMasterProfileLocal(
   masterId: string,
   patch: Partial<
-    Pick<Master, "name" | "title" | "bio" | "tags" | "career" | "phoneNumber" | "responseTimeLabel">
+    Pick<
+      Master,
+      | "name"
+      | "title"
+      | "bio"
+      | "tags"
+      | "career"
+      | "phoneNumber"
+      | "responseTimeLabel"
+      | "avatarUrl"
+      | "heroImageUrl"
+    >
   >,
 ): Master | undefined {
   const db = loadDb();
@@ -236,6 +389,7 @@ export function resetDbToSeed() {
 
 const DEFAULT_MASTER_PRICING: MasterPricing = {
   feedbackPrice: 69000,
+  feedbackAdditionalPrice: 69000,
   phonePrice15Min: 18000,
   phonePrice30Min: 30000,
   visitPrice: 80000,
@@ -284,6 +438,9 @@ export function registerMaster(input: {
     career: input.career,
     phoneNumber: input.phoneNumber,
     pricing: { ...DEFAULT_MASTER_PRICING, updatedAt: new Date().toISOString() },
+    offWeekdays: [...DEFAULT_OFF_WEEKDAYS],
+    bookingTimes: [...DEFAULT_BOOKING_TIMES],
+    offDates: [],
   };
   db.masters.push(master);
   saveDb(db);
@@ -349,6 +506,7 @@ export function cancelFeedbackOrderLocal(id: string): FeedbackOrder | undefined 
 export function createPracticeRecordLocal(input: {
   studentId: string;
   title: string;
+  memo?: string;
   durationSec: number;
   mediaUrl?: string;
 }) {
@@ -363,4 +521,79 @@ export function createPracticeRecordLocal(input: {
   if (student) student.points += 300;
   saveDb(db);
   return record;
+}
+
+export function createMasterPackageLocal(input: {
+  masterId: string;
+  level: PackageLevel;
+  title: string;
+  description?: string;
+  coverUrl?: string;
+  weeks: PackageWeek[];
+  priceVisit: number;
+  pricePhone: number;
+  priceVideo: number;
+}): MasterPackage {
+  const db = loadDb();
+  const pkg: MasterPackage = {
+    id: `pkg-${Date.now()}`,
+    masterId: input.masterId,
+    level: input.level,
+    title: input.title,
+    description: input.description,
+    coverUrl: input.coverUrl,
+    weeks: input.weeks,
+    priceVisit: input.priceVisit,
+    pricePhone: input.pricePhone,
+    priceVideo: input.priceVideo,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  };
+  db.masterPackages.unshift(pkg);
+  saveDb(db);
+  return pkg;
+}
+
+export function deactivateMasterPackageLocal(packageId: string): void {
+  const db = loadDb();
+  const pkg = db.masterPackages.find((p) => p.id === packageId);
+  if (!pkg) return;
+  pkg.isActive = false;
+  saveDb(db);
+}
+
+export function updateMasterPackageLocal(
+  packageId: string,
+  patch: {
+    level: PackageLevel;
+    title: string;
+    description?: string;
+    coverUrl?: string;
+    weeks: PackageWeek[];
+    priceVisit: number;
+    pricePhone: number;
+    priceVideo: number;
+  },
+): MasterPackage | undefined {
+  const db = loadDb();
+  const pkg = db.masterPackages.find((p) => p.id === packageId);
+  if (!pkg) return undefined;
+  Object.assign(pkg, {
+    level: patch.level,
+    title: patch.title,
+    description: patch.description,
+    coverUrl: patch.coverUrl,
+    weeks: patch.weeks,
+    priceVisit: patch.priceVisit,
+    pricePhone: patch.pricePhone,
+    priceVideo: patch.priceVideo,
+  });
+  saveDb(db);
+  return pkg;
+}
+
+export function deleteMasterPackageLocal(packageId: string): void {
+  const db = loadDb();
+  db.masterPackages = db.masterPackages.filter((p) => p.id !== packageId);
+  saveDb(db);
 }

@@ -15,7 +15,7 @@ export function MasterLayoutClient({ children }: { children: React.ReactNode }) 
   return (
     <AuthGuard role="master">
       <DbLoadingOverlay />
-      <AppFrame className="bg-[#f8fafc] pb-24">
+      <AppFrame className="bg-[#f8fafc] pb-16">
         {children}
         {!hideNav && <MasterBottomNav />}
       </AppFrame>

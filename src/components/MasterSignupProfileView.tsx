@@ -12,6 +12,7 @@ import {
   type MasterSignupDraft,
 } from "@/lib/auth/signup-draft";
 import { getHomePathForRole, getSession, isAuthenticated, setSession } from "@/lib/auth/session";
+import { checkNicknameAvailable } from "@/lib/db/api";
 
 const inputClass =
   "h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500";
@@ -97,6 +98,7 @@ export function MasterSignupProfileView() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [titleHint, setTitleHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -139,6 +141,16 @@ export function MasterSignupProfileView() {
     }
     if (!title.trim()) {
       setError("활동명을 입력해 주세요.");
+      return;
+    }
+    try {
+      const available = await checkNicknameAvailable(title.trim(), "master_title");
+      if (!available) {
+        setError("이미 사용 중인 활동명이에요. 다른 이름을 입력해 주세요.");
+        return;
+      }
+    } catch {
+      setError("활동명 확인에 실패했어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
     if (!bio.trim()) {
@@ -242,10 +254,28 @@ export function MasterSignupProfileView() {
               onChange={(e) => {
                 setTitle(e.target.value);
                 setError(null);
+                setTitleHint(null);
+              }}
+              onBlur={() => {
+                if (!title.trim()) return;
+                void checkNicknameAvailable(title.trim(), "master_title")
+                  .then((ok) => {
+                    setTitleHint(ok ? "사용 가능한 활동명이에요." : "이미 사용 중인 활동명이에요.");
+                  })
+                  .catch(() => setTitleHint(null));
               }}
               placeholder="예: 김뮤직 마스터"
               className={inputClass}
             />
+            {titleHint && (
+              <p
+                className={`mt-1.5 text-[12px] font-medium ${
+                  titleHint.includes("가능") ? "text-emerald-600" : "text-red-500"
+                }`}
+              >
+                {titleHint}
+              </p>
+            )}
           </div>
 
           <LineAddField

@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { TimestampComment } from "@/lib/db/schema";
-import { DEFAULT_COMMENTS, STORAGE_KEY } from "@/lib/timestamp-comments";
+import { DEFAULT_COMMENTS } from "@/lib/timestamp-comments";
 import { formatTime } from "@/lib/timestamp-comments";
 
 type TimestampCommentsProps = {
@@ -18,21 +17,7 @@ export function TimestampComments({
   currentTime = 0,
   compact = false,
 }: TimestampCommentsProps) {
-  const [comments, setComments] = useState<TimestampComment[]>(commentsProp ?? DEFAULT_COMMENTS);
-
-  useEffect(() => {
-    if (commentsProp) {
-      setComments(commentsProp);
-      return;
-    }
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setComments(JSON.parse(saved) as TimestampComment[]);
-    } catch {
-      setComments(DEFAULT_COMMENTS);
-    }
-  }, [commentsProp]);
-
+  const comments = commentsProp ?? DEFAULT_COMMENTS;
   const sorted = [...comments].sort((a, b) => a.time - b.time);
 
   return (
@@ -41,7 +26,7 @@ export function TimestampComments({
         compact ? "p-3" : "shadow-soft p-3.5"
       }`}
     >
-      <p className="mb-2.5 text-[11px] font-bold tracking-wide text-gray-400">구간별 피드백</p>
+      <p className="mb-2.5 text-[11px] font-bold tracking-wide text-gray-400">피드백</p>
       <div className="flex flex-col gap-1.5">
         {sorted.map((c) => {
           const active = Math.abs(currentTime - c.time) < 2;
@@ -90,46 +75,4 @@ export function TimestampComments({
       </div>
     </div>
   );
-}
-
-export function useAudioPlayer(duration: number) {
-  const [currentTime, setCurrentTime] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-  }, []);
-
-  const togglePlay = useCallback(() => {
-    setPlaying((prev) => {
-      if (prev) {
-        stopTimer();
-        return false;
-      }
-      timerRef.current = setInterval(() => {
-        setCurrentTime((t) => {
-          if (t + 1 >= duration) {
-            stopTimer();
-            setPlaying(false);
-            return duration;
-          }
-          return t + 1;
-        });
-      }, 1000);
-      return true;
-    });
-  }, [duration, stopTimer]);
-
-  const seekTo = useCallback(
-    (seconds: number) => {
-      setCurrentTime(Math.min(duration, Math.max(0, seconds)));
-    },
-    [duration],
-  );
-
-  useEffect(() => () => stopTimer(), [stopTimer]);
-
-  return { currentTime, playing, togglePlay, seekTo };
 }

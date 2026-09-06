@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { AppImage } from "@/components/AppImage";
 import type { Academy } from "@/lib/db/academies";
 
 export function AcademyDetailView({ academy }: { academy: Academy }) {
   return (
     <div className="pb-24">
       <div className="relative h-[260px]">
-        <img src={academy.imageUrl} alt={academy.name} className="h-full w-full object-cover" />
+        <AppImage
+          src={academy.imageUrl}
+          alt={academy.name}
+          fill
+          priority
+          className="object-cover"
+          sizes="(max-width: 430px) 100vw, 430px"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
 
         <header className="absolute top-0 z-10 flex w-full items-center justify-between p-4 text-white">
@@ -73,9 +81,9 @@ export function AcademyDetailView({ academy }: { academy: Academy }) {
           <div className="flex items-start gap-6">
             <div className="w-[72px] shrink-0 pt-0.5 text-[15px] font-bold text-gray-900">운영시간</div>
             <div className="flex-1 space-y-0.5 text-[14px] leading-[1.7] font-medium text-gray-500">
-              <p>평일 10:00 - 22:00</p>
-              <p>토요일 10:00 - 18:00</p>
-              <p>일요일 · 공휴일 휴무</p>
+              {academy.hours.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
             </div>
           </div>
           <div className="flex items-start gap-6">

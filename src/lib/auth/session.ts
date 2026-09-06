@@ -1,5 +1,12 @@
 export type UserRole = "student" | "master";
 
+export type OnboardingPrefs = {
+  genre: string;
+  problems: string[];
+  style: string;
+  completedAt: string;
+};
+
 export type AuthUser = {
   id: string;
   name: string;
@@ -8,9 +15,12 @@ export type AuthUser = {
   role: UserRole;
   studentId?: string;
   masterId?: string;
+  onboardingPrefs?: OnboardingPrefs | null;
 };
 
 const SESSION_KEY = "eum_session_v1";
+
+/** 로그인 세션 캐시(역할·ID). 비즈니스 데이터는 Supabase DB에 저장 */
 
 export function getSession(): AuthUser | null {
   if (typeof window === "undefined") return null;
@@ -36,11 +46,35 @@ export function setSession(user: AuthUser) {
   window.dispatchEvent(new CustomEvent("eum-auth-updated"));
 }
 
+/** SessionProvider 내부 동기화용 — 이벤트를 발생시키지 않음 */
+export function persistSession(user: AuthUser) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+export function hasCompleteSession(user: AuthUser | null) {
+  if (!user) return false;
+  return user.role === "master" ? Boolean(user.masterId) : Boolean(user.studentId);
+}
+
 export function clearSession() {
   if (typeof window === "undefined") return;
+  const hadSession = localStorage.getItem(SESSION_KEY) !== null;
+  if (!hadSession) {
+    void import("@/lib/auth/supabase-auth").then(({ invalidateAuthUserCache }) => {
+      invalidateAuthUserCache();
+    });
+    void import("@/lib/db/api").then(({ invalidateDbCache }) => {
+      invalidateDbCache();
+    });
+    return;
+  }
   localStorage.removeItem(SESSION_KEY);
   void import("@/lib/auth/supabase-auth").then(({ invalidateAuthUserCache }) => {
     invalidateAuthUserCache();
+  });
+  void import("@/lib/db/api").then(({ invalidateDbCache }) => {
+    invalidateDbCache();
   });
   window.dispatchEvent(new CustomEvent("eum-auth-updated"));
 }

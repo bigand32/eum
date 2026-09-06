@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ACADEMIES } from "@/lib/db/academies";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { useDb } from "@/lib/db/use-db";
+import { useDbReady } from "@/lib/db/db-provider";
 import { getOnboardingPrefs } from "@/lib/onboarding";
 import { SearchListThumb } from "@/components/SearchListThumb";
 import { EumLogo } from "@/components/EumLogo";
@@ -18,10 +19,25 @@ const MASTER_TRAITS: Record<string, string[]> = {
 };
 
 const GENRE_FILTERS = [
-  { id: "all", label: "전체" },
-  { id: "kpop", label: "K-POP/아이돌", match: ["팝", "아이돌", "K-POP"] },
-  { id: "musical", label: "뮤지컬/성악", match: ["뮤지컬", "성악", "입시"] },
-  { id: "rap", label: "랩/미디", match: ["랩", "힙합", "미디"] },
+  {
+    id: "all",
+    label: "전체",
+  },
+  {
+    id: "kpop",
+    label: "K-POP/아이돌",
+    match: ["팝", "아이돌", "K-POP", "kpop", "케이팝"],
+  },
+  {
+    id: "musical",
+    label: "뮤지컬/성악",
+    match: ["뮤지컬", "성악", "입시", "musical"],
+  },
+  {
+    id: "rap",
+    label: "랩/미디",
+    match: ["랩", "힙합", "미디", "rap", "hiphop"],
+  },
 ] as const;
 
 const ACADEMY_FILTERS = [
@@ -42,6 +58,7 @@ export function SearchView() {
   const [genreFilter, setGenreFilter] = useState("all");
   const [academyFilter, setAcademyFilter] = useState("all");
   const { masters } = useDb();
+  const dbReady = useDbReady();
   const onboarding = getOnboardingPrefs();
 
   useEffect(() => {
@@ -80,17 +97,40 @@ export function SearchView() {
           if (!matchesQuery(haystack, q)) return false;
         }
         if (genre && genre.id !== "all" && "match" in genre) {
-          const tagText = m.tags.join(" ");
-          if (!genre.match.some((k) => tagText.includes(k) || m.title.includes(k))) return false;
+          const tagText = m.tags.join(" ").toLowerCase();
+          const titleText = m.title.toLowerCase();
+          if (
+            !genre.match.some(
+              (k) => tagText.includes(k.toLowerCase()) || titleText.includes(k.toLowerCase()),
+            )
+          ) {
+            return false;
+          }
         }
         return true;
       })
       .sort((a, b) => {
         if (!onboarding?.genre) return 0;
         const boost = (m: typeof a) => {
-          if (onboarding.genre === "kpop" && m.tags.some((t) => t.includes("팝"))) return 1;
-          if (onboarding.genre === "musical" && m.tags.some((t) => t.includes("뮤지컬"))) return 1;
-          if (onboarding.genre === "rap" && m.tags.some((t) => t.includes("랩"))) return 1;
+          const tags = m.tags.map((t) => t.toLowerCase());
+          if (
+            onboarding.genre === "kpop" &&
+            tags.some((t) => t.includes("팝") || t.includes("kpop") || t.includes("아이돌"))
+          ) {
+            return 1;
+          }
+          if (
+            onboarding.genre === "musical" &&
+            tags.some((t) => t.includes("뮤지컬") || t.includes("성악") || t.includes("입시"))
+          ) {
+            return 1;
+          }
+          if (
+            onboarding.genre === "rap" &&
+            tags.some((t) => t.includes("랩") || t.includes("힙합") || t.includes("rap"))
+          ) {
+            return 1;
+          }
           return 0;
         };
         return boost(b) - boost(a);
@@ -143,7 +183,7 @@ export function SearchView() {
               isMaster ? "text-brand-500" : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            커뮤니티
+            마스터
           </button>
           <button
             type="button"
@@ -152,7 +192,7 @@ export function SearchView() {
               !isMaster ? "text-brand-500" : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            파키즈
+            학원
           </button>
           <div
             className="tab-indicator absolute bottom-0 left-0 h-0.5 w-1/2 rounded-t-full bg-brand-500"
@@ -211,7 +251,11 @@ export function SearchView() {
             </div>
           </div>
 
-          {filteredMasters.length === 0 ? (
+          {!dbReady && filteredMasters.length === 0 ? (
+            <div className="rounded-[24px] border border-gray-100 bg-white p-8 text-center text-[13px] text-gray-400">
+              마스터를 불러오는 중...
+            </div>
+          ) : filteredMasters.length === 0 ? (
             <div className="rounded-[24px] border border-gray-100 bg-white p-8 text-center text-[13px] text-gray-400">
               검색 결과가 없어요
             </div>
@@ -255,7 +299,7 @@ export function SearchView() {
                 </div>
                 <div className="mt-1 flex items-center justify-between border-t border-gray-50 pt-3">
                   <div className="text-[12px] font-medium text-gray-500">{PREMIUM_FEEDBACK_LABEL}</div>
-                  <PremiumPriceDisplay size="sm" showStrike={false} />
+                  <PremiumPriceDisplay price={m.pricing.feedbackPrice} size="sm" />
                 </div>
               </Link>
             ))

@@ -8,17 +8,18 @@ export function SearchListThumb({
   variant?: "master" | "academy";
 }) {
   return (
-    <div className="relative h-[72px] w-[72px] shrink-0">
+    <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden border border-gray-50">
+      {/* eslint-disable-next-line @next/next/no-img-element -- 검색 리스트는 다수라 lazy 네이티브가 더 가벼움 */}
       <img
         src={src}
         alt={alt}
-        className={`h-full w-full object-cover border border-gray-50 ${
+        loading="lazy"
+        decoding="async"
+        className={`h-full w-full object-cover ${
           variant === "master" ? "rounded-full" : "rounded-[16px]"
         }`}
+        style={{ borderRadius: variant === "master" ? "9999px" : "16px" }}
       />
-      {variant === "master" && (
-        <div className="absolute right-1 bottom-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />
-      )}
     </div>
   );
 }

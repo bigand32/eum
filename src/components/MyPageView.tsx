@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useDb } from "@/lib/db/use-db";
 import { useStudentId } from "@/lib/auth/use-student-id";
+import { matchesStudentScope } from "@/lib/student-utils";
 import { useSession } from "@/lib/auth/use-session";
 import { getPhoneDurationLabel } from "@/lib/phone-pricing";
 import { toTelHref } from "@/lib/phone-call";
+import { FriendInviteCard } from "@/components/FriendInviteCard";
 
 const menuItems = [
   {
@@ -13,6 +15,12 @@ const menuItems = [
     icon: "fa-microphone-lines",
     solid: true,
     label: "내 연습 기록 및 피드백",
+  },
+  {
+    href: "/mypage/courses",
+    icon: "fa-play",
+    solid: true,
+    label: "내 온라인 강의",
   },
   {
     href: "/mypage/payments",
@@ -24,13 +32,34 @@ const menuItems = [
     href: "/mypage/favorites",
     icon: "fa-heart",
     solid: false,
-    label: "찜한 마스터 / 학원",
+    label: "찜한 목록",
   },
   {
     href: "/mypage/reviews",
     icon: "fa-comment-dots",
     solid: false,
     label: "내가 쓴 리뷰",
+  },
+] as const;
+
+const supportItems = [
+  {
+    href: "/mypage/support",
+    icon: "fa-headset",
+    solid: true,
+    label: "고객센터",
+  },
+  {
+    href: "/mypage/faq",
+    icon: "fa-circle-question",
+    solid: false,
+    label: "FAQ",
+  },
+  {
+    href: "/mypage/notices",
+    icon: "fa-bullhorn",
+    solid: true,
+    label: "공지사항",
   },
 ] as const;
 
@@ -54,9 +83,12 @@ export function MyPageView() {
   const studentId = useStudentId();
   const { session } = useSession();
   const student = db.students.find((s) => s.id === studentId);
+  const myCouponCount = db.studentCouponClaims.filter(
+    (c) => (!studentId || c.studentId === studentId) && !c.usedAt,
+  ).length;
   const displayName = session?.name ?? student?.name ?? "회원";
   const upcoming = db.reservations
-    .filter((r) => r.studentId === studentId && r.status === "scheduled")
+    .filter((r) => matchesStudentScope(studentId, r.studentId) && r.status === "scheduled")
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())[0];
   const upcomingMaster = upcoming
     ? db.masters.find((m) => m.id === upcoming.masterId)
@@ -74,13 +106,13 @@ export function MyPageView() {
           >
             <i className="fa-solid fa-cart-shopping text-[18px]" />
           </button>
-          <button
-            type="button"
+          <Link
+            href="/mypage/settings"
             aria-label="설정"
             className="transition-colors hover:text-brand-500"
           >
             <i className="fa-solid fa-gear text-[18px]" />
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -109,15 +141,22 @@ export function MyPageView() {
                   <span className="ml-0.5 text-[13px] text-gray-900">P</span>
                 </div>
               </button>
-              <button type="button" className="flex-1 cursor-pointer text-center">
+              <Link href="/mypage/coupons" className="flex-1 cursor-pointer text-center">
                 <div className="mb-1 text-[12px] font-semibold text-gray-500">내 쿠폰</div>
                 <div className="text-[17px] font-extrabold text-gray-900">
-                  2<span className="ml-0.5 text-[13px] font-medium">장</span>
+                  {myCouponCount}
+                  <span className="ml-0.5 text-[13px] font-medium">장</span>
                 </div>
-              </button>
+              </Link>
             </div>
           </div>
         </section>
+
+        {studentId ? (
+          <section className="mb-8 px-5">
+            <FriendInviteCard studentId={studentId} />
+          </section>
+        ) : null}
 
         <section className="mb-8 px-5">
           <div className="mb-3 flex items-center justify-between">
@@ -207,26 +246,29 @@ export function MyPageView() {
           </div>
         </section>
 
-        <section className="mb-8 px-5">
-          <Link
-            href="/master"
-            className="group relative block overflow-hidden rounded-[20px] bg-gradient-to-r from-gray-200 to-gray-100 p-5"
-          >
-            <div className="relative z-10">
-              <span className="mb-1 block text-[11px] font-bold text-gray-500">
-                원장님을 위한 서비스
-              </span>
-              <h4 className="mb-2 text-[16px] font-bold leading-tight text-gray-900">
-                보컬 학원을 운영 중이신가요?
-                <br />
-                eum 파트너스 입점하기
-              </h4>
-              <div className="flex items-center gap-1 text-[12px] font-medium text-gray-600 transition-colors group-hover:text-brand-500">
-                자세히 보기 <i className="fa-solid fa-arrow-right text-[10px]" />
-              </div>
-            </div>
-            <i className="fa-solid fa-building absolute -right-4 -bottom-4 rotate-12 text-[80px] text-white opacity-40" />
-          </Link>
+        <section className="mb-10 px-5">
+          <h3 className="mb-3 text-[17px] font-bold tracking-tight text-gray-900">고객지원</h3>
+          <div className="shadow-soft overflow-hidden rounded-[24px] border border-gray-100 bg-white">
+            {supportItems.map((item, i) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center justify-between p-5 transition active:bg-gray-50 ${
+                  i < supportItems.length - 1 ? "border-b border-gray-50" : ""
+                }`}
+              >
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-gray-500">
+                    <i
+                      className={`fa-${item.solid ? "solid" : "regular"} ${item.icon} text-[14px]`}
+                    />
+                  </div>
+                  <span className="truncate text-[15px] font-bold text-gray-900">{item.label}</span>
+                </div>
+                <i className="fa-solid fa-chevron-right shrink-0 text-[13px] text-gray-300" />
+              </Link>
+            ))}
+          </div>
         </section>
       </main>
     </>

@@ -2,42 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { loginAccount } from "@/lib/auth/accounts";
-import { getCurrentAuthUser } from "@/lib/auth/supabase-auth";
-import {
-  getHomePathForRole,
-  getSession,
-  isAuthenticated,
-  setSession,
-} from "@/lib/auth/session";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getHomePathForRole, setSession } from "@/lib/auth/session";
 
 export function LoginView() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const redirectIfLoggedIn = async () => {
-      if (isSupabaseConfigured()) {
-        const user = await getCurrentAuthUser();
-        if (user) {
-          setSession(user);
-          router.replace(getHomePathForRole(user.role));
-        }
-        return;
-      }
-
-      if (isAuthenticated()) {
-        const session = getSession();
-        if (session) router.replace(getHomePathForRole(session.role));
-      }
-    };
-
-    void redirectIfLoggedIn();
-  }, [router]);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,22 +20,28 @@ export function LoginView() {
       return;
     }
 
-    const user = await loginAccount(email.trim(), password);
-    if (!user) {
-      setError("이메일 또는 비밀번호가 올바르지 않아요.");
-      return;
-    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const user = await loginAccount(email.trim(), password);
+      if (!user) {
+        setError("이메일 또는 비밀번호가 올바르지 않아요.");
+        return;
+      }
 
-    setSession(user);
-    router.push(getHomePathForRole(user.role));
+      setSession(user);
+      router.replace(getHomePathForRole(user.role));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="flex min-h-dvh flex-col px-6 pt-16 pb-10">
       <div className="mb-10 text-center">
-        <Link href="/login" className="text-[32px] font-extrabold tracking-tighter text-gray-900">
+        <div className="text-[32px] font-extrabold tracking-tighter text-gray-900">
           eum<span className="text-brand-500">.</span>
-        </Link>
+        </div>
         <p className="mt-3 text-[14px] font-medium text-gray-500">
           보컬 코칭, eum에서 시작하세요
         </p>
@@ -83,7 +63,8 @@ export function LoginView() {
                 setError(null);
               }}
               placeholder="name@email.com"
-              className="h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500"
+              disabled={submitting}
+              className="h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500 disabled:opacity-60"
             />
           </div>
           <div>
@@ -100,7 +81,8 @@ export function LoginView() {
                 setError(null);
               }}
               placeholder="비밀번호 입력"
-              className="h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500"
+              disabled={submitting}
+              className="h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500 disabled:opacity-60"
             />
           </div>
         </div>
@@ -109,9 +91,10 @@ export function LoginView() {
 
         <button
           type="submit"
-          className="mt-6 h-[52px] w-full rounded-[14px] bg-gray-900 text-[16px] font-bold text-white transition-colors hover:bg-gray-800"
+          disabled={submitting}
+          className="mt-6 h-[52px] w-full rounded-[14px] bg-gray-900 text-[16px] font-bold text-white transition-colors hover:bg-gray-800 disabled:opacity-60"
         >
-          로그인
+          {submitting ? "로그인 중..." : "로그인"}
         </button>
 
         <div className="mt-4 flex items-center justify-center gap-3 text-[13px]">
@@ -119,7 +102,7 @@ export function LoginView() {
             비밀번호 찾기
           </button>
           <span className="text-gray-200">|</span>
-          <Link href="/signup" className="font-bold text-brand-500 hover:text-brand-600">
+          <Link href="/signup" prefetch={false} className="font-bold text-brand-500 hover:text-brand-600">
             회원가입
           </Link>
         </div>

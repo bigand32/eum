@@ -1,5 +1,10 @@
 import type { EumDatabase, FeedbackOrder, Reservation } from "@/lib/db/schema";
 
+export function matchesMasterScope(masterId: string, entityMasterId: string) {
+  if (!masterId) return false;
+  return entityMasterId === masterId;
+}
+
 export function getStudentName(db: EumDatabase, studentId: string) {
   return db.students.find((s) => s.id === studentId)?.name || "수강생";
 }
@@ -45,23 +50,39 @@ export function isUrgentFeedback(order: FeedbackOrder) {
 
 export function getMasterPendingAmount(db: EumDatabase, masterId: string) {
   const feedback = db.feedbackOrders
-    .filter((o) => o.masterId === masterId && o.status === "paid")
+    .filter((o) => matchesMasterScope(masterId, o.masterId) && o.status === "paid")
     .reduce((sum, o) => sum + o.priceAtPurchase, 0);
   const reservations = db.reservations
-    .filter((r) => r.masterId === masterId && r.status === "scheduled")
+    .filter((r) => matchesMasterScope(masterId, r.masterId) && r.status === "scheduled")
     .reduce((sum, r) => sum + r.priceAtPurchase, 0);
   return feedback + reservations;
 }
 
 export function getTodayPhoneReservations(db: EumDatabase, masterId: string): Reservation[] {
+  return getTodayReservations(db, masterId, "phone");
+}
+
+export function getTodayVisitReservations(db: EumDatabase, masterId: string): Reservation[] {
+  return getTodayReservations(db, masterId, "visit");
+}
+
+export function getTodayReservations(
+  db: EumDatabase,
+  masterId: string,
+  type: "phone" | "visit",
+): Reservation[] {
   const today = new Date();
-  return db.reservations.filter(
-    (r) =>
-      r.masterId === masterId &&
-      r.type === "phone" &&
-      r.status === "scheduled" &&
-      isSameDay(new Date(r.scheduledAt), today),
-  );
+  return db.reservations
+    .filter(
+      (r) =>
+        matchesMasterScope(masterId, r.masterId) &&
+        r.type === type &&
+        r.status === "scheduled" &&
+        isSameDay(new Date(r.scheduledAt), today),
+    )
+    .sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+    );
 }
 
 export function formatManWon(won: number) {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { useDb } from "@/lib/db/use-db";
 import { useStudentId } from "@/lib/auth/use-student-id";
+import { matchesStudentScope } from "@/lib/student-utils";
 import { formatPrice } from "@/lib/db/schema";
 import { getPhoneDurationLabel } from "@/lib/phone-pricing";
 
@@ -28,7 +29,7 @@ export function PaymentHistoryView() {
 
   const items: PaymentItem[] = [
     ...db.feedbackOrders
-      .filter((o) => o.studentId === studentId)
+      .filter((o) => matchesStudentScope(studentId, o.studentId))
       .map((o) => {
         const master = db.masters.find((m) => m.id === o.masterId);
         const extra = o.extraDurationFee ?? 0;
@@ -48,7 +49,7 @@ export function PaymentHistoryView() {
         };
       }),
     ...db.reservations
-      .filter((r) => r.studentId === studentId)
+      .filter((r) => matchesStudentScope(studentId, r.studentId))
       .map((r) => {
         const master = db.masters.find((m) => m.id === r.masterId);
         const label =
@@ -63,6 +64,20 @@ export function PaymentHistoryView() {
           amount: r.priceAtPurchase,
           status: r.status === "scheduled" ? "예약됨" : r.status === "completed" ? "완료" : "취소",
           href: "/reservation",
+        };
+      }),
+    ...(db.packagePurchases ?? [])
+      .filter((p) => matchesStudentScope(studentId, p.studentId))
+      .map((p) => {
+        const master = db.masters.find((m) => m.id === p.masterId);
+        return {
+          id: p.id,
+          date: p.createdAt,
+          label: `온라인 강의 · ${p.packageTitle}`,
+          masterName: master?.title ?? "마스터",
+          amount: p.priceAtPurchase,
+          status: "수강중",
+          href: `/mypage/courses/${p.id}`,
         };
       }),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

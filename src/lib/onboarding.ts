@@ -1,16 +1,24 @@
-export type OnboardingPrefs = {
-  genre: string;
-  problems: string[];
-  style: string;
-  completedAt: string;
-};
+import { getSession, setSession } from "@/lib/auth/session";
+import type { OnboardingPrefs } from "@/lib/auth/session";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createClient } from "@/lib/supabase/client";
 
-const KEY = "eum_onboarding_v1";
+export type { OnboardingPrefs };
 
-export function getOnboardingPrefs(): OnboardingPrefs | null {
+const LOCAL_KEY = "eum_onboarding_v1";
+
+function localKeyForUser(userId: string) {
+  return `${LOCAL_KEY}:${userId}`;
+}
+
+function readLocalOnboarding(userId?: string): OnboardingPrefs | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(KEY);
+    if (userId) {
+      const scoped = localStorage.getItem(localKeyForUser(userId));
+      if (scoped) return JSON.parse(scoped) as OnboardingPrefs;
+    }
+    const raw = localStorage.getItem(LOCAL_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as OnboardingPrefs;
   } catch {
@@ -18,18 +26,86 @@ export function getOnboardingPrefs(): OnboardingPrefs | null {
   }
 }
 
-export function isOnboardingComplete() {
-  return getOnboardingPrefs()?.completedAt != null;
+function writeLocalOnboarding(userId: string | undefined, prefs: OnboardingPrefs) {
+  if (typeof window === "undefined") return;
+  const raw = JSON.stringify(prefs);
+  if (userId) localStorage.setItem(localKeyForUser(userId), raw);
+  localStorage.setItem(LOCAL_KEY, raw);
+  window.dispatchEvent(new CustomEvent("eum-onboarding-updated"));
 }
 
-export function saveOnboardingPrefs(prefs: Omit<OnboardingPrefs, "completedAt">) {
-  if (typeof window === "undefined") return;
+export function getOnboardingPrefs(): OnboardingPrefs | null {
+  const session = getSession();
+  if (session?.onboardingPrefs?.completedAt) {
+    return session.onboardingPrefs;
+  }
+  return readLocalOnboarding(session?.id);
+}
+
+export function isOnboardingComplete() {
+  return Boolean(getOnboardingPrefs()?.completedAt);
+}
+
+export async function saveOnboardingPrefs(prefs: Omit<OnboardingPrefs, "completedAt">) {
   const payload: OnboardingPrefs = {
     ...prefs,
     completedAt: new Date().toISOString(),
   };
-  localStorage.setItem(KEY, JSON.stringify(payload));
-  window.dispatchEvent(new CustomEvent("eum-onboarding-updated"));
+
+  if (isSupabaseConfigured()) {
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) throw authError ?? new Error("NOT_AUTHENTICATED");
+
+    const session = getSession();
+    const name = session?.name || String(user.user_metadata?.name ?? "");
+    const phone = session?.phone ?? "";
+    const email = user.email ?? session?.email ?? "";
+
+    const { data: existingProfile, error: profileReadError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileReadError) throw profileReadError;
+
+    if (!existingProfile) {
+      const { error: insertError } = await supabase.from("profiles").insert({
+        id: user.id,
+        email,
+        name,
+        phone,
+        role: session?.role ?? "student",
+        onboarding_prefs: payload,
+      });
+      if (insertError) throw insertError;
+    } else {
+      const { data: updated, error: updateError } = await supabase
+        .from("profiles")
+        .update({ onboarding_prefs: payload })
+        .eq("id", user.id)
+        .select("id")
+        .maybeSingle();
+      if (updateError) throw updateError;
+      if (!updated) throw new Error("ONBOARDING_SAVE_FAILED");
+    }
+
+    void import("@/lib/auth/supabase-auth").then(({ invalidateAuthUserCache }) => {
+      invalidateAuthUserCache();
+    });
+
+    writeLocalOnboarding(user.id, payload);
+
+    if (session?.id === user.id) {
+      setSession({ ...session, onboardingPrefs: payload });
+    }
+    return;
+  }
+
+  writeLocalOnboarding(undefined, payload);
 }
 
 export const GENRE_OPTIONS = [
