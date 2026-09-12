@@ -343,7 +343,7 @@ export function MasterOffDaysForm() {
                 onClick={() => toggleTime(time)}
                 className={`rounded-xl border py-2.5 text-[13px] font-bold tabular-nums transition ${
                   active
-                    ? "border-master-500 bg-indigo-50 text-master-500"
+                    ? "border-master-500 bg-brand-50 text-master-500"
                     : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                 }`}
               >
@@ -363,7 +363,7 @@ export function MasterOffDaysForm() {
         disabled={saving}
         onClick={() => void handleSave()}
         className={`w-full rounded-xl py-4 text-[15px] font-bold text-white transition-colors disabled:opacity-60 ${
-          saved ? "bg-green-600" : "bg-master-500 hover:bg-indigo-700"
+          saved ? "bg-green-600" : "bg-master-500 hover:bg-brand-600"
         }`}
       >
         {saved ? "저장됐어요" : saving ? "저장 중..." : "저장하기"}

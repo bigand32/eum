@@ -13,6 +13,8 @@ import {
 } from "@/lib/auth/signup-draft";
 import { getHomePathForRole, getSession, isAuthenticated, setSession } from "@/lib/auth/session";
 import { checkNicknameAvailable } from "@/lib/db/api";
+import { MasterCategoryPicker } from "@/components/MasterCategoryPicker";
+import { normalizeMasterCategories } from "@/lib/master-categories";
 
 const inputClass =
   "h-12 w-full rounded-[14px] border border-gray-200 bg-white px-4 text-[15px] outline-none focus:border-brand-500";
@@ -91,7 +93,6 @@ export function MasterSignupProfileView() {
   const [draft, setDraft] = useState<MasterSignupDraft | null>(null);
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [tagDraft, setTagDraft] = useState("");
   const [bio, setBio] = useState("");
   const [careers, setCareers] = useState<string[]>([]);
   const [careerDraft, setCareerDraft] = useState("");
@@ -110,6 +111,10 @@ export function MasterSignupProfileView() {
     const saved = loadMasterSignupDraft();
     if (!saved) {
       router.replace("/signup");
+      return;
+    }
+    if (!saved.verificationFile) {
+      router.replace("/signup/master/verify");
       return;
     }
     setDraft(saved);
@@ -162,9 +167,9 @@ export function MasterSignupProfileView() {
       setError("경력을 한 줄 이상 추가해 주세요.");
       return;
     }
-    const tagList = tags.map((tag) => tag.trim()).filter(Boolean);
+    const tagList = normalizeMasterCategories(tags);
     if (tagList.length === 0) {
-      setError("전문 분야를 한 가지 이상 추가해 주세요.");
+      setError("전문 분야를 한 가지 이상 선택해 주세요.");
       return;
     }
 
@@ -181,6 +186,7 @@ export function MasterSignupProfileView() {
           career,
           tags: tagList,
           avatarUrl: avatarDataUrl,
+          verificationFile: draft.verificationFile,
         },
       });
       clearMasterSignupDraft();
@@ -196,14 +202,14 @@ export function MasterSignupProfileView() {
   return (
     <div className="flex min-h-dvh flex-col px-6 pt-12 pb-10">
       <Link
-        href="/signup"
+        href="/signup/master/verify"
         className="mb-6 inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-gray-600"
       >
         <i className="fa-solid fa-chevron-left text-[14px]" />
       </Link>
 
       <div className="mb-6">
-        <p className="text-[13px] font-bold text-brand-500">2 / 2</p>
+        <p className="text-[13px] font-bold text-brand-500">3 / 3</p>
         <h1 className="mt-1 text-[24px] font-extrabold tracking-tight text-gray-900">
           강사 프로필
         </h1>
@@ -278,24 +284,11 @@ export function MasterSignupProfileView() {
             )}
           </div>
 
-          <LineAddField
-            label="전문 분야"
-            placeholder="예: 팝보컬"
-            items={tags}
-            draft={tagDraft}
-            onDraftChange={(value) => {
-              setTagDraft(value);
+          <MasterCategoryPicker
+            value={tags}
+            onChange={(next) => {
+              setTags(next);
               setError(null);
-            }}
-            onAdd={() => {
-              const next = tagDraft.trim();
-              if (!next) return;
-              setTags((prev) => [...prev, next]);
-              setTagDraft("");
-              setError(null);
-            }}
-            onRemove={(index) => {
-              setTags((prev) => prev.filter((_, i) => i !== index));
             }}
           />
 

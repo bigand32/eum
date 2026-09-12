@@ -36,15 +36,9 @@ function wipeCaches() {
 }
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSessionState] = useState<AuthUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getSession();
-  });
-  // Supabase 사용 시에는 항상 서버 세션 확인이 끝날 때까지 loading
-  const [loading, setLoading] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return isSupabaseConfigured();
-  });
+  // SSR·첫 클라 렌더를 동일하게 맞춤 (localStorage는 mount 후에만 읽음)
+  const [session, setSessionState] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const lastSyncedUserId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -132,6 +126,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     };
 
     if (isSupabaseConfigured()) {
+      // mount 후 캐시만 먼저 반영 → 하이드레이션 이후 빠른 표시
+      const cached = getSession();
+      if (cached) {
+        setSessionState(cached);
+      }
       void refreshSupabase();
 
       const supabase = createClient();

@@ -21,7 +21,12 @@ export function AuthGuard({
   const router = useRouter();
   const { session, loading } = useSession();
   const [ready, setReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const allowedKey = (roles?.length ? [...roles].sort().join(",") : role) ?? "";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,8 +88,8 @@ export function AuthGuard({
   }, [session, loading, allowedKey, router]);
 
   if (!ready) {
-    // 세션이 있으면 가드로 전체를 막지 않고 children 렌더 (DB 스켈레톤과 병행)
-    if (session) return children;
+    // mount 이후에만 세션 단축 — SSR/첫 클라 렌더는 로딩으로 통일
+    if (mounted && session) return children;
     return (
       <div className="flex min-h-dvh items-center justify-center bg-white">
         <div className="text-[14px] font-medium text-gray-400">로딩 중…</div>

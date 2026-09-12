@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { EumLogo } from "@/components/EumLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useDb } from "@/lib/db/use-db";
 import { useSession } from "@/lib/auth/use-session";
 import { useMasterId } from "@/lib/auth/use-master-id";
@@ -49,10 +49,10 @@ export function MasterHomeClient() {
   return (
     <>
       <div className="relative overflow-hidden bg-white px-6 pb-6 safe-top-pad">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-indigo-50/80 to-white" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-brand-50/90 to-white" />
 
         <header className="safe-top relative mb-8 flex items-center justify-between">
-          <EumLogo variant="dark" suffix="파트너스" />
+          <BrandLogo variant="dark" suffix="파트너스" />
           <Link
             href="/master/schedule"
             aria-label="일정 알림"
@@ -98,7 +98,7 @@ export function MasterHomeClient() {
                 <Link
                   key={r.id}
                   href={r.href}
-                  className="flex items-center justify-between rounded-[16px] border border-indigo-100 bg-indigo-50/70 px-4 py-3"
+                  className="flex items-center justify-between rounded-[16px] border border-brand-100 bg-brand-50/80 px-4 py-3"
                 >
                   <div>
                     <p className="text-[14px] font-bold text-gray-900">{r.title}</p>
@@ -111,26 +111,48 @@ export function MasterHomeClient() {
           </section>
         )}
 
+        {pendingFeedback.length > 0 && (
+          <Link
+            href="/master/feedback"
+            className="flex items-center justify-between rounded-[16px] border border-brand-100 bg-brand-50/80 px-4 py-3.5"
+          >
+            <div>
+              <p className="text-[14px] font-bold text-gray-900">대기 중인 피드백이 있어요</p>
+              <p className="mt-0.5 text-[12px] text-gray-500">
+                {pendingFeedback.length}건 답변을 기다리고 있어요
+              </p>
+            </div>
+            <i className="fa-solid fa-chevron-right text-[11px] text-gray-300" />
+          </Link>
+        )}
+
         <TaskSection
           title="피드백"
           count={pendingFeedback.length}
           empty="대기 중인 피드백이 없어요"
+          href="/master/feedback"
         >
-          {pendingFeedback.map((o) => (
+          {pendingFeedback.slice(0, 3).map((o) => (
             <FeedbackTaskCard
               key={o.id}
               order={o}
               studentName={getStudentName(db, o.studentId)}
             />
           ))}
+          {pendingFeedback.length > 3 && (
+            <Link href="/master/feedback" className="text-center text-[13px] font-bold text-master-500">
+              {pendingFeedback.length - 3}건 더 보기
+            </Link>
+          )}
         </TaskSection>
 
         <TaskSection
           title="전화 상담"
           count={todayPhone.length}
           empty="전화 일정이 없어요"
+          href="/master/consultations/phone"
         >
-          {todayPhone.map((r) => (
+          {todayPhone.slice(0, 3).map((r) => (
             <ReservationTaskCard
               key={r.id}
               reservation={r}
@@ -138,14 +160,23 @@ export function MasterHomeClient() {
               phoneNumber={master?.phoneNumber ?? ""}
             />
           ))}
+          {todayPhone.length > 3 && (
+            <Link
+              href="/master/consultations/phone"
+              className="text-center text-[13px] font-bold text-master-500"
+            >
+              {todayPhone.length - 3}건 더 보기
+            </Link>
+          )}
         </TaskSection>
 
         <TaskSection
           title="방문 상담"
           count={todayVisit.length}
           empty="방문 일정이 없어요"
+          href="/master/consultations/visit"
         >
-          {todayVisit.map((r) => (
+          {todayVisit.slice(0, 3).map((r) => (
             <ReservationTaskCard
               key={r.id}
               reservation={r}
@@ -153,6 +184,14 @@ export function MasterHomeClient() {
               phoneNumber={master?.phoneNumber ?? ""}
             />
           ))}
+          {todayVisit.length > 3 && (
+            <Link
+              href="/master/consultations/visit"
+              className="text-center text-[13px] font-bold text-master-500"
+            >
+              {todayVisit.length - 3}건 더 보기
+            </Link>
+          )}
         </TaskSection>
       </main>
     </>
@@ -183,18 +222,27 @@ function TaskSection({
   title,
   count,
   empty,
+  href,
   children,
 }: {
   title: string;
   count: number;
   empty: string;
+  href: string;
   children: ReactNode;
 }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between px-1">
-        <h3 className="text-[15px] font-bold tracking-tight text-gray-900">{title}</h3>
-        <span className="text-[12px] font-medium text-gray-400">{count}건</span>
+        <h3 className="text-[15px] font-bold tracking-tight text-gray-900">
+          {title}
+          {count > 0 && (
+            <span className="ml-1.5 text-[13px] font-bold text-master-500">{count}</span>
+          )}
+        </h3>
+        <Link href={href} className="text-[12px] font-medium text-gray-400 hover:text-gray-600">
+          전체보기
+        </Link>
       </div>
       {count === 0 ? (
         <div className="rounded-[20px] border border-dashed border-gray-200 bg-white px-4 py-6 text-center text-[13px] text-gray-400">
@@ -207,15 +255,25 @@ function TaskSection({
   );
 }
 
-function FeedbackTaskCard({
+export function FeedbackTaskCard({
   order,
   studentName,
+  actionLabel,
 }: {
   order: FeedbackOrder;
   studentName: string;
+  actionLabel?: string;
 }) {
   const video = isFeedbackVideo(order);
   const mediaLabel = formatFeedbackMediaLabel(order.mediaLabel, video);
+  const pending = order.status === "paid" || order.status === "in_review";
+  const label =
+    actionLabel ??
+    (order.status === "completed"
+      ? "피드백 보기"
+      : order.status === "cancelled"
+        ? "취소됨"
+        : "피드백 작성");
 
   return (
     <Link
@@ -225,11 +283,15 @@ function FeedbackTaskCard({
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2">
-            <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-master-500">
+            <span className="rounded-md bg-brand-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-master-500">
               {video ? "영상" : "음성"}
             </span>
             <span className="text-[12px] font-medium text-gray-400">
-              {formatDeadlineLabel(order.createdAt)}
+              {pending
+                ? formatDeadlineLabel(order.createdAt)
+                : order.status === "completed"
+                  ? "완료"
+                  : "취소"}
             </span>
           </div>
           <h4 className="truncate text-[16px] font-bold text-gray-900">{studentName}</h4>
@@ -244,26 +306,37 @@ function FeedbackTaskCard({
       </p>
       <p className="mb-4 text-[12px] font-medium text-gray-400">{mediaLabel}</p>
 
-      <div className="flex items-center justify-between rounded-xl bg-gray-900 px-4 py-3">
-        <span className="text-[13px] font-bold text-white">피드백 작성</span>
-        <i className="fa-solid fa-arrow-right text-[12px] text-white/70" />
+      <div
+        className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+          pending ? "bg-gray-900" : "bg-gray-100"
+        }`}
+      >
+        <span className={`text-[13px] font-bold ${pending ? "text-white" : "text-gray-600"}`}>
+          {label}
+        </span>
+        <i
+          className={`fa-solid fa-arrow-right text-[12px] ${pending ? "text-white/70" : "text-gray-400"}`}
+        />
       </div>
     </Link>
   );
 }
 
-function ReservationTaskCard({
+export function ReservationTaskCard({
   reservation,
   studentName,
   phoneNumber,
+  whenLabel,
 }: {
   reservation: Reservation;
   studentName: string;
   phoneNumber: string;
+  whenLabel?: string;
 }) {
   const isPhone = reservation.type === "phone";
-  const time = formatTimeLabel(reservation.scheduledAt);
+  const time = whenLabel ?? formatTimeLabel(reservation.scheduledAt);
   const question = reservation.preQuestion || (isPhone ? "전화 상담 예약" : "방문 상담 예약");
+  const active = reservation.status === "scheduled";
 
   return (
     <div className="rounded-[22px] border border-gray-100 bg-white p-5 shadow-soft">
@@ -285,6 +358,11 @@ function ReservationTaskCard({
                 {reservation.durationMin}분
               </span>
             ) : null}
+            {!active && (
+              <span className="text-[11px] font-medium text-gray-400">
+                {reservation.status === "completed" ? "완료" : "취소"}
+              </span>
+            )}
           </div>
           <h4 className="truncate text-[16px] font-bold text-gray-900">{studentName}</h4>
         </div>
@@ -302,7 +380,13 @@ function ReservationTaskCard({
         {formatPrice(reservation.priceAtPurchase)}원
       </p>
 
-      {isPhone ? (
+      {!active ? (
+        <div className="flex items-center justify-between rounded-xl bg-gray-100 px-4 py-3">
+          <span className="text-[13px] font-bold text-gray-600">
+            {reservation.status === "completed" ? "상담 완료" : "예약 취소"}
+          </span>
+        </div>
+      ) : isPhone ? (
         phoneNumber ? (
           <a
             href={toTelHref(phoneNumber)}

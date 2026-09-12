@@ -18,14 +18,16 @@ export function MasterBottomNav() {
       {tabs.map((tab) => {
         const active =
           tab.href === "/master"
-            ? pathname === "/master"
+            ? pathname === "/master" ||
+              pathname === "/master/feedback" ||
+              pathname.startsWith("/master/consultations")
             : pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}
             href={tab.href}
             className={`flex w-16 flex-col items-center gap-1 ${
-              active ? "text-[#4f46e5]" : "text-gray-400 transition hover:text-gray-900"
+              active ? "text-master-500" : "text-gray-400 transition hover:text-gray-900"
             }`}
           >
             <i

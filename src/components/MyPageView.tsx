@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useDb } from "@/lib/db/use-db";
 import { useStudentId } from "@/lib/auth/use-student-id";
 import { matchesStudentScope } from "@/lib/student-utils";
@@ -8,13 +9,14 @@ import { useSession } from "@/lib/auth/use-session";
 import { getPhoneDurationLabel } from "@/lib/phone-pricing";
 import { toTelHref } from "@/lib/phone-call";
 import { FriendInviteCard } from "@/components/FriendInviteCard";
+import type { Master, Reservation } from "@/lib/db/schema";
 
 const menuItems = [
   {
     href: "/daily",
     icon: "fa-microphone-lines",
     solid: true,
-    label: "내 연습 기록 및 피드백",
+    label: "내 피드백 및 연습 기록",
   },
   {
     href: "/mypage/courses",
@@ -78,6 +80,100 @@ function formatCoachingTime(iso: string) {
   return `${prefix} ${period} ${hour12}:${minutes}`;
 }
 
+function UpcomingCoachingCarousel({
+  items,
+}: {
+  items: { reservation: Reservation; master: Master }[];
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const width = el.clientWidth;
+      if (width <= 0) return;
+      setIndex(Math.max(0, Math.min(items.length - 1, Math.round(el.scrollLeft / width))));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [items.length]);
+
+  return (
+    <div>
+      <div
+        ref={scrollerRef}
+        className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
+      >
+        {items.map(({ reservation, master }) => (
+          <div key={reservation.id} className="w-full min-w-full shrink-0 snap-center">
+            <div className="shadow-soft rounded-[20px] border border-gray-100 bg-white p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <span className="mb-2.5 inline-block rounded-full border border-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-500">
+                    {formatCoachingTime(reservation.scheduledAt)}
+                  </span>
+                  <p className="mb-1 text-[13px] font-semibold text-brand-500">곧 코칭이 시작돼요</p>
+                  <h4 className="mb-0.5 text-[17px] font-extrabold leading-tight tracking-tight text-gray-900">
+                    {master.title}
+                  </h4>
+                  <p className="text-[13px] font-medium text-gray-400">
+                    {reservation.type === "phone"
+                      ? getPhoneDurationLabel((reservation.durationMin ?? 30) as 15 | 30)
+                      : `방문 상담 (${reservation.durationMin ?? master.pricing.visitDurationMin}분)`}
+                  </p>
+                </div>
+                <img
+                  src={master.avatarUrl}
+                  alt={master.title}
+                  className="h-[60px] w-[60px] shrink-0 rounded-full border border-gray-100 object-cover"
+                />
+              </div>
+              {reservation.type === "phone" ? (
+                <a
+                  href={toTelHref(master.phoneNumber)}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-[12px] bg-brand-500 py-3 text-[14px] font-bold text-white transition-colors hover:bg-brand-600"
+                >
+                  <i className="fa-solid fa-phone text-[13px]" />
+                  바로 전화하기
+                </a>
+              ) : (
+                <Link
+                  href="/reservation"
+                  className="mt-4 block w-full rounded-[12px] bg-brand-500 py-3 text-center text-[14px] font-bold text-white transition-colors hover:bg-brand-600"
+                >
+                  방문 상담 확인하기
+                </Link>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {items.length > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-1.5">
+          {items.map((item, i) => (
+            <button
+              key={item.reservation.id}
+              type="button"
+              aria-label={`${i + 1}번째 코칭`}
+              onClick={() => {
+                const el = scrollerRef.current;
+                if (!el) return;
+                el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+              }}
+              className={`h-1.5 rounded-full transition-all ${
+                index === i ? "w-4 bg-gray-900" : "w-1.5 bg-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MyPageView() {
   const db = useDb();
   const studentId = useStudentId();
@@ -87,33 +183,25 @@ export function MyPageView() {
     (c) => (!studentId || c.studentId === studentId) && !c.usedAt,
   ).length;
   const displayName = session?.name ?? student?.name ?? "회원";
-  const upcoming = db.reservations
+  const upcomingList = db.reservations
     .filter((r) => matchesStudentScope(studentId, r.studentId) && r.status === "scheduled")
-    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())[0];
-  const upcomingMaster = upcoming
-    ? db.masters.find((m) => m.id === upcoming.masterId)
-    : null;
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+    .flatMap((reservation) => {
+      const master = db.masters.find((m) => m.id === reservation.masterId);
+      return master ? [{ reservation, master }] : [];
+    });
 
   return (
     <>
       <header className="safe-top sticky top-0 z-50 flex items-center justify-between bg-surface/90 px-6 pb-4 backdrop-blur-md">
         <h1 className="text-[20px] font-extrabold tracking-tight text-gray-900">내 정보</h1>
-        <div className="flex gap-4 text-xl text-gray-800">
-          <button
-            type="button"
-            aria-label="장바구니"
-            className="transition-colors hover:text-brand-500"
-          >
-            <i className="fa-solid fa-cart-shopping text-[18px]" />
-          </button>
-          <Link
-            href="/mypage/settings"
-            aria-label="설정"
-            className="transition-colors hover:text-brand-500"
-          >
-            <i className="fa-solid fa-gear text-[18px]" />
-          </Link>
-        </div>
+        <Link
+          href="/mypage/settings"
+          aria-label="설정"
+          className="text-xl text-gray-800 transition-colors hover:text-brand-500"
+        >
+          <i className="fa-solid fa-gear text-[18px]" />
+        </Link>
       </header>
 
       <main className="flex flex-col">
@@ -160,7 +248,12 @@ export function MyPageView() {
 
         <section className="mb-8 px-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">다가오는 코칭</h3>
+            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">
+              다가오는 코칭
+              {upcomingList.length > 1 && (
+                <span className="ml-1.5 text-[13px] font-bold text-brand-500">{upcomingList.length}</span>
+              )}
+            </h3>
             <Link
               href="/reservation"
               className="text-[12px] font-medium text-gray-400 hover:text-gray-600"
@@ -169,46 +262,8 @@ export function MyPageView() {
             </Link>
           </div>
 
-          {upcoming && upcomingMaster ? (
-            <div className="shadow-soft rounded-[20px] border border-gray-100 bg-white p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <span className="mb-2.5 inline-block rounded-full border border-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-500">
-                    {formatCoachingTime(upcoming.scheduledAt)}
-                  </span>
-                  <p className="mb-1 text-[13px] font-semibold text-brand-500">곧 코칭이 시작돼요</p>
-                  <h4 className="mb-0.5 text-[17px] font-extrabold leading-tight tracking-tight text-gray-900">
-                    {upcomingMaster.title}
-                  </h4>
-                  <p className="text-[13px] font-medium text-gray-400">
-                    {upcoming.type === "phone"
-                      ? getPhoneDurationLabel((upcoming.durationMin ?? 30) as 15 | 30)
-                      : `방문 상담 (${upcoming.durationMin ?? upcomingMaster.pricing.visitDurationMin}분)`}
-                  </p>
-                </div>
-                <img
-                  src={upcomingMaster.avatarUrl}
-                  alt={upcomingMaster.title}
-                  className="h-[60px] w-[60px] shrink-0 rounded-full border border-gray-100 object-cover"
-                />
-              </div>
-              {upcoming.type === "phone" ? (
-                <a
-                  href={toTelHref(upcomingMaster.phoneNumber)}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-[12px] bg-brand-500 py-3 text-[14px] font-bold text-white transition-colors hover:bg-brand-600"
-                >
-                  <i className="fa-solid fa-phone text-[13px]" />
-                  바로 전화하기
-                </a>
-              ) : (
-                <Link
-                  href="/reservation"
-                  className="mt-4 block w-full rounded-[12px] bg-brand-500 py-3 text-center text-[14px] font-bold text-white transition-colors hover:bg-brand-600"
-                >
-                  방문 상담 확인하기
-                </Link>
-              )}
-            </div>
+          {upcomingList.length > 0 ? (
+            <UpcomingCoachingCarousel items={upcomingList} />
           ) : (
             <div className="shadow-soft rounded-[20px] border border-gray-100 bg-white p-5 text-center">
               <p className="text-[14px] font-medium text-gray-400">예약된 코칭이 없어요</p>

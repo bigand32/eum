@@ -49,6 +49,11 @@ function registerLocalAccount(input: {
     career: string[];
     tags: string[];
     avatarUrl: string;
+    verificationFile?: {
+      fileName: string;
+      mimeType: string;
+      dataUrl: string;
+    };
   };
 }): AuthUser {
   const accounts = loadAccounts();
@@ -123,6 +128,11 @@ export async function registerAccount(input: {
     career: string[];
     tags: string[];
     avatarUrl: string;
+    verificationFile?: {
+      fileName: string;
+      mimeType: string;
+      dataUrl: string;
+    };
   };
 }): Promise<AuthUser> {
   if (isSupabaseConfigured()) {

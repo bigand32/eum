@@ -304,7 +304,7 @@ function ConsistencyDetail({
                 cy="60"
                 r="48"
                 fill="none"
-                stroke="#3182f6"
+                stroke="var(--brand-500)"
                 strokeWidth="12"
                 strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 48}

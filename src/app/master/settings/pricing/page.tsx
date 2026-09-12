@@ -13,7 +13,7 @@ export default function MasterPricingPage() {
             <div className="text-[17px] font-bold text-gray-900">요금 설정</div>
             <div className="text-[12px] text-gray-500">피드백 · 전화 · 방문 상담</div>
           </div>
-          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-master-500">
+          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-master-500">
             마스터
           </span>
         </div>

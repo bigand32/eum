@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BRAND_NAME } from "@/lib/brand";
 import {
   copySignupInviteLink,
   getSignupInviteMessage,
@@ -17,11 +18,12 @@ export function SignupInviteCard() {
   }, []);
 
   const inviteMessage = useMemo(() => {
-    if (typeof window === "undefined") return "[eum] 보컬 코칭 회원가입\n/signup";
+    if (typeof window === "undefined") return `[${BRAND_NAME}] 보컬 코칭 회원가입\n/signup`;
     return getSignupInviteMessage(window.location.origin);
   }, []);
 
-  const messageTitle = inviteMessage.split("\n")[0] ?? "[eum] 보컬 코칭 회원가입";
+  const messageTitle =
+    inviteMessage.split("\n")[0] ?? `[${BRAND_NAME}] 보컬 코칭 회원가입`;
 
   const handleCopy = async () => {
     setCopyError(null);

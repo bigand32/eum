@@ -24,12 +24,11 @@ const DbContext = createContext<DbContextValue>({
 const VISIBLE_REFRESH_MIN_MS = 60_000;
 
 export function DbProvider({ children }: { children: React.ReactNode }) {
-  const [value, setValue] = useState<DbContextValue>(() => ({
-    db:
-      typeof window !== "undefined" && !isSupabaseConfigured() ? getDb() : EMPTY_DB,
-    ready: typeof window !== "undefined" && !isSupabaseConfigured(),
+  const [value, setValue] = useState<DbContextValue>({
+    db: EMPTY_DB,
+    ready: false,
     refreshing: false,
-  }));
+  });
   const refreshSeq = useRef(0);
   const dbRef = useRef(value.db);
   const lastUserIdRef = useRef<string | undefined>(undefined);

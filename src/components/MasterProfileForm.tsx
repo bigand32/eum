@@ -13,6 +13,8 @@ import type { Master } from "@/lib/db/schema";
 import { useDb } from "@/lib/db/use-db";
 import { useDbReady } from "@/lib/db/db-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { MasterCategoryPicker } from "@/components/MasterCategoryPicker";
+import { normalizeMasterCategories } from "@/lib/master-categories";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -47,7 +49,7 @@ export function MasterProfileForm() {
   const [bio, setBio] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [responseTimeLabel, setResponseTimeLabel] = useState("1시간");
-  const [tagsText, setTagsText] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [careerText, setCareerText] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function MasterProfileForm() {
     setBio(linkedMaster.bio);
     setPhoneNumber(linkedMaster.phoneNumber);
     setResponseTimeLabel(linkedMaster.responseTimeLabel);
-    setTagsText(linkedMaster.tags.join(", "));
+    setTags(normalizeMasterCategories(linkedMaster.tags));
     setCareerText(linkedMaster.career.join("\n"));
     if (!avatarDataUrl) {
       setAvatarPreview(linkedMaster.avatarUrl);
@@ -102,7 +104,7 @@ export function MasterProfileForm() {
         setBio(next.bio);
         setPhoneNumber(next.phoneNumber);
         setResponseTimeLabel(next.responseTimeLabel);
-        setTagsText(next.tags.join(", "));
+        setTags(normalizeMasterCategories(next.tags));
         setCareerText(next.career.join("\n"));
         setAvatarPreview(next.avatarUrl);
         setHeroPreview(next.heroImageUrl);
@@ -219,6 +221,13 @@ export function MasterProfileForm() {
         return;
       }
 
+      const nextTags = normalizeMasterCategories(tags);
+      if (nextTags.length === 0) {
+        setMessage("전문 분야를 한 가지 이상 선택해 주세요.");
+        setSaving(false);
+        return;
+      }
+
       let avatarUrl: string | undefined;
       let heroImageUrl: string | undefined;
 
@@ -238,10 +247,7 @@ export function MasterProfileForm() {
         bio: bio.trim(),
         phoneNumber: phoneNumber.trim(),
         responseTimeLabel: responseTimeLabel.trim(),
-        tags: tagsText
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        tags: nextTags,
         career: careerText
           .split("\n")
           .map((c) => c.trim())
@@ -356,14 +362,12 @@ export function MasterProfileForm() {
           />
         </label>
 
-        <label className="block">
-          <span className="mb-1.5 block text-[13px] font-bold text-gray-600">태그 (쉼표 구분)</span>
-          <input
-            value={tagsText}
-            onChange={(e) => setTagsText(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-[14px] outline-none focus:border-brand-500"
-          />
-        </label>
+        <MasterCategoryPicker
+          value={tags}
+          onChange={setTags}
+          label="전문 분야"
+          hint="목록에서만 선택할 수 있어요"
+        />
 
         <label className="block">
           <span className="mb-1.5 block text-[13px] font-bold text-gray-600">소개</span>

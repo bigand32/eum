@@ -132,7 +132,7 @@ export function VocalAiAnalyzeView() {
       </header>
 
       <section className="px-5 pt-2">
-        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-brand-500 to-sky-500 p-6 text-white">
+        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-brand-600 to-brand-400 p-6 text-white">
           <p className="text-[13px] font-medium text-white/85">노래방 점수기보다 디테일하게</p>
           <h2 className="mt-1 text-[22px] font-extrabold leading-snug">
             녹음하면 AI가

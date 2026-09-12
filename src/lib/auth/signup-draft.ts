@@ -1,10 +1,17 @@
 const DRAFT_KEY = "eum_signup_master_draft_v1";
 
+export type MasterVerificationFile = {
+  fileName: string;
+  mimeType: string;
+  dataUrl: string;
+};
+
 export type MasterSignupDraft = {
   name: string;
   email: string;
   phone: string;
   password: string;
+  verificationFile?: MasterVerificationFile;
 };
 
 export function saveMasterSignupDraft(draft: MasterSignupDraft) {

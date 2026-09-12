@@ -30,6 +30,7 @@ export function RecordModal() {
   const [previewIsVideo, setPreviewIsVideo] = useState(true);
   const [saving, setSaving] = useState(false);
   const [memo, setMemo] = useState("");
+  const [title, setTitle] = useState("");
 
   const clearPreview = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -38,6 +39,7 @@ export function RecordModal() {
     setPreviewIsVideo(true);
     setElapsedSec(0);
     setMemo("");
+    setTitle("");
     durationRef.current = 0;
   }, [previewUrl]);
 
@@ -103,19 +105,23 @@ export function RecordModal() {
 
   const handleSave = () => {
     void (async () => {
-      if (!selectedFile) return;
-      setSaving(true);
-      try {
-        const durationSec = Math.max(durationRef.current, elapsedSec, 1);
-        const today = new Date();
-        await savePracticeRecording({
-          authUserId: session?.id,
-          studentId: session?.studentId ?? studentId,
-          blob: selectedFile,
-          durationSec,
-          title: `${today.getMonth() + 1}월 ${today.getDate()}일 연습`,
-          memo: memo.trim() || undefined,
-        });
+        if (!selectedFile) return;
+        const nextTitle = title.trim();
+        if (!nextTitle) {
+          setError("연습 제목을 입력해 주세요.");
+          return;
+        }
+        setSaving(true);
+        try {
+          const durationSec = Math.max(durationRef.current, elapsedSec, 1);
+          await savePracticeRecording({
+            authUserId: session?.id,
+            studentId: session?.studentId ?? studentId,
+            blob: selectedFile,
+            durationSec,
+            title: nextTitle,
+            memo: memo.trim() || undefined,
+          });
         markAttendanceToday();
         closeModal();
       } catch (err) {
@@ -233,6 +239,20 @@ export function RecordModal() {
                     </p>
                     <p className="text-[11px] text-gray-500 tabular-nums">{formatTime(elapsedSec)}</p>
                   </div>
+                  <label className="mb-3 flex flex-col gap-1.5">
+                    <span className="text-[13px] font-bold text-gray-800">연습 제목</span>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => {
+                        setTitle(e.target.value);
+                        setError(null);
+                      }}
+                      placeholder="예) 밤양갱 1절 고음"
+                      maxLength={40}
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none"
+                    />
+                  </label>
                   <textarea
                     value={memo}
                     onChange={(e) => setMemo(e.target.value)}

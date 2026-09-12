@@ -16,7 +16,7 @@ export const SEED_DB: EumDatabase = {
       reviewCount: 312,
       feedbackCount: 842,
       responseTimeLabel: "30분",
-      tags: ["팝보컬", "뮤지컬", "입시전문"],
+      tags: ["K-pop/가요", "뮤지컬", "발라드"],
       bio: "정확한 진단이 빠른 성장을 만듭니다.\n불필요한 힘을 빼고 본인만의 톤을 찾을 수 있도록\n책임지고 코칭해드리겠습니다.",
       rankLabel: "eum 추천순위 1위",
       phoneNumber: "010-1234-5678",
@@ -63,7 +63,7 @@ export const SEED_DB: EumDatabase = {
       reviewCount: 197,
       feedbackCount: 520,
       responseTimeLabel: "1시간",
-      tags: ["R&B", "랩메이킹"],
+      tags: ["R&B/소울", "힙합/랩"],
       phoneNumber: "010-9876-5432",
       bio: "감성 보컬과 랩 플로우를 함께 잡아드려요.\n무대 경험을 바탕으로 실전 감각을 키워드립니다.",
       career: [

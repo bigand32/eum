@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { loginAccount } from "@/lib/auth/accounts";
 import { getHomePathForRole, setSession } from "@/lib/auth/session";
+import { BRAND_NAME } from "@/lib/brand";
 
 export function LoginView() {
   const router = useRouter();
@@ -38,12 +40,10 @@ export function LoginView() {
 
   return (
     <div className="flex min-h-dvh flex-col px-6 pt-16 pb-10">
-      <div className="mb-10 text-center">
-        <div className="text-[32px] font-extrabold tracking-tighter text-gray-900">
-          eum<span className="text-brand-500">.</span>
-        </div>
-        <p className="mt-3 text-[14px] font-medium text-gray-500">
-          보컬 코칭, eum에서 시작하세요
+      <div className="mb-10 flex flex-col items-center text-center">
+        <BrandLogo size="lg" />
+        <p className="mt-4 text-[14px] font-medium text-gray-500">
+          보컬 코칭, {BRAND_NAME}에서 시작하세요
         </p>
       </div>
 
@@ -98,6 +98,10 @@ export function LoginView() {
         </button>
 
         <div className="mt-4 flex items-center justify-center gap-3 text-[13px]">
+          <Link href="/find-id" prefetch={false} className="font-medium text-gray-400 hover:text-gray-600">
+            아이디 찾기
+          </Link>
+          <span className="text-gray-200">|</span>
           <button type="button" className="font-medium text-gray-400 hover:text-gray-600">
             비밀번호 찾기
           </button>

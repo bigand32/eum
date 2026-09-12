@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #e5e7eb;
-  --foreground: #111827;
-  --brand-50: #f0f5ff;
-  --brand-100: #e5edff;
-  --brand-500: #3182f6;
-  --brand-600: #1b64da;
-  --surface: #f2f4f6;
-  --master-500: #4f46e5;
+  --background: #e7dff4;
+  --foreground: #13052a;
+  /** 브랜드 보라 #4401a9 를 기준으로 흰색·검정과 섞어 만든 램프 */
+  --brand-50: #f7f4fb;
+  --brand-100: #ebe3f6;
+  --brand-200: #cbb6e8;
+  --brand-300: #a57dd5;
+  --brand-400: #743fbf;
+  --brand-500: #4401a9;
+  --brand-600: #38018b;
+  --surface: #f4f0f9;
+  --master-500: #320c78;
 }
 
 @theme inline {
@@ -16,6 +20,9 @@
   --color-foreground: var(--foreground);
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
   --color-brand-500: var(--brand-500);
   --color-brand-600: var(--brand-600);
   --color-surface: var(--surface);
@@ -54,15 +61,6 @@ body {
   50% { opacity: 0.5; transform: scale(0.85); }
 }
 .rec-dot { animation: pulse-rec 1.2s ease-in-out infinite; }
-
-@keyframes bar-bounce {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
-}
-.wave-bar {
-  transform-origin: bottom;
-  animation: bar-bounce 0.8s ease-in-out infinite;
-}
 
 .toggle-track.is-on { background-color: var(--brand-500); }
 .toggle-track.is-on .toggle-knob { transform: translateX(20px); }

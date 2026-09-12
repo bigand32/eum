@@ -14,14 +14,11 @@ export function DbLoadingOverlay() {
   const ready = useDbReady();
   const { loading } = useSession();
   const [timedOut, setTimedOut] = useState(false);
-
-  const hasCachedSession =
-    typeof window !== "undefined" &&
-    isSupabaseConfigured() &&
-    hasCompleteSession(getSession());
+  const [hasCachedSession, setHasCachedSession] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
+    setHasCachedSession(hasCompleteSession(getSession()));
     const timer = window.setTimeout(() => setTimedOut(true), LOADING_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, []);

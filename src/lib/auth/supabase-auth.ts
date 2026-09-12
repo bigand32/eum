@@ -258,6 +258,41 @@ async function uploadAvatar(userId: string, dataUrl: string): Promise<string> {
   return `${data.publicUrl}?t=${Date.now()}`;
 }
 
+async function saveMasterVerification(
+  userId: string,
+  masterId: string,
+  file: { fileName: string; mimeType: string; dataUrl: string },
+) {
+  const supabase = createClient();
+  const [meta, base64] = file.dataUrl.split(",");
+  if (!base64) return;
+  const mime = file.mimeType || meta.match(/data:(.*?);/)?.[1] || "application/octet-stream";
+  const extFromName = file.fileName.split(".").pop()?.toLowerCase();
+  const ext = extFromName && extFromName.length <= 5 ? extFromName : mime.split("/")[1] || "bin";
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  const path = `${userId}/credential-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage.from("master-verification").upload(path, bytes, {
+    upsert: false,
+    contentType: mime,
+  });
+  if (uploadError) {
+    console.warn("master verification upload skipped", uploadError.message);
+    return;
+  }
+
+  const { error } = await supabase.from("master_verifications").insert({
+    master_id: masterId,
+    user_id: userId,
+    document_path: path,
+    file_name: file.fileName,
+    status: "pending",
+  });
+  if (error) {
+    console.warn("master verification record skipped", error.message);
+  }
+}
+
 export async function uploadMasterAvatar(dataUrl: string): Promise<string> {
   const supabase = createClient();
   const {
@@ -351,6 +386,11 @@ export async function registerWithSupabase(input: {
     career: string[];
     tags: string[];
     avatarUrl: string;
+    verificationFile?: {
+      fileName: string;
+      mimeType: string;
+      dataUrl: string;
+    };
   };
 }): Promise<AuthUser> {
   const supabase = createClient();
@@ -442,6 +482,9 @@ export async function registerWithSupabase(input: {
     .maybeSingle();
 
   if (existingMaster) {
+    if (input.masterProfile.verificationFile) {
+      await saveMasterVerification(userId, existingMaster.id, input.masterProfile.verificationFile);
+    }
     return {
       id: userId,
       name: input.name.trim(),
@@ -474,6 +517,10 @@ export async function registerWithSupabase(input: {
     .single();
 
   if (masterError) throw masterError;
+
+  if (input.masterProfile.verificationFile) {
+    await saveMasterVerification(userId, master.id, input.masterProfile.verificationFile);
+  }
 
   return {
     id: userId,

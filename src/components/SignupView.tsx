@@ -98,7 +98,7 @@ export function SignupView() {
         phone: normalizePhone(phone),
         password,
       });
-      router.push("/signup/master");
+      router.push("/signup/master/verify");
       return;
     }
 
@@ -128,7 +128,7 @@ export function SignupView() {
 
       <div className="mb-6">
         {role === "master" && (
-          <p className="text-[13px] font-bold text-brand-500">1 / 2</p>
+          <p className="text-[13px] font-bold text-brand-500">1 / 3</p>
         )}
         <h1 className={`${role === "master" ? "mt-1" : ""} text-[24px] font-extrabold tracking-tight text-gray-900`}>
           회원가입

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { EumLogo } from "@/components/EumLogo";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { AppImage } from "@/components/AppImage";
+import { PartnerInquiryModal } from "@/components/PartnerInquiryModal";
 import { FEATURED_ACADEMY } from "@/lib/db/academies";
 import { useDb } from "@/lib/db/use-db";
 import { useStudentId } from "@/lib/auth/use-student-id";
@@ -11,24 +12,34 @@ import { getStudentReminders } from "@/lib/reminders";
 import { HomeChallenges } from "@/components/HomeChallenges";
 
 const quickMenu = [
-  { icon: "fa-microphone-lines", label: "피드백", href: "/search" },
-  { icon: "fa-book-open", label: "연습일지", href: "/daily" },
+  { art: "/brand/icons/feedback-v3.png", label: "피드백", href: "/search" },
+  { art: "/brand/icons/journal-v3.png", label: "연습일지", href: "/daily" },
 ] as const;
 
-const promoBanners = [
+type PromoBanner = {
+  id: string;
+  badge: string;
+  title: ReactNode;
+  desc: string;
+  art: string;
+  /** 없으면 클릭 시 파트너 신청 폼을 띄운다 */
+  href?: string;
+};
+
+const promoBanners: PromoBanner[] = [
   {
     id: "welcome",
     badge: "신규 가입 혜택",
     title: (
       <>
-        첫 코칭 <span className="text-brand-500">50% 할인</span>
+        첫 코칭 <span className="text-gray-900">50% 할인</span>
         <br />
-        <span className="text-brand-500">5,000P</span> 즉시 지급
+        <span className="text-gray-900">5,000P</span> 즉시 지급
       </>
     ),
     desc: "eum에서 노래 실력을 레벨업하세요",
     href: "/search",
-    tone: "brand" as const,
+    art: "/brand/promo/welcome-v3.png",
   },
   {
     id: "feedback",
@@ -37,32 +48,60 @@ const promoBanners = [
       <>
         연습 영상 올리고
         <br />
-        <span className="text-brand-500">코칭</span> 받기
+        코칭 받기
       </>
     ),
     desc: "마스터가 타임스탬프로 짚어드려요",
     href: "/search",
-    tone: "brand" as const,
+    art: "/brand/promo/feedback-v3.png",
   },
   {
-    id: "academy",
-    badge: "AD · 학원",
+    id: "partner",
+    badge: "파트너 모집",
     title: (
       <>
-        {FEATURED_ACADEMY.name}
+        보컬학원 파트너 모집
         <br />
-        <span className="text-white">조기등록 10%</span> 혜택
+        지금 신청하세요
       </>
     ),
-    desc: "강남역 인근 · 보컬입시 · 미디작곡",
-    href: `/academies/${FEATURED_ACADEMY.id}`,
-    tone: "dark" as const,
+    desc: "eum에서 수강생을 만나보세요",
+    art: "/brand/promo/academy-v3.png",
   },
-] as const;
+];
+
+const PROMO_CARD_CLASS =
+  "shadow-soft flex w-full min-w-full shrink-0 snap-center items-center gap-4 bg-gray-50 p-5 text-left";
+
+function PromoBannerBody({ banner, priority }: { banner: PromoBanner; priority: boolean }) {
+  return (
+    <>
+      <div className="min-w-0 flex-1">
+        <span className="mb-2 inline-block rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-gray-500">
+          {banner.badge}
+        </span>
+        <h2 className="mb-1 text-[17px] font-extrabold leading-snug tracking-tight text-gray-900">
+          {banner.title}
+        </h2>
+        <p className="text-[12px] font-medium text-gray-400">{banner.desc}</p>
+      </div>
+
+      <AppImage
+        src={banner.art}
+        alt=""
+        width={192}
+        height={192}
+        priority={priority}
+        className="h-[96px] w-[96px] shrink-0 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+      />
+    </>
+  );
+}
 
 function HomePromoCarousel() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
+  const [partnerOpen, setPartnerOpen] = useState(false);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -98,59 +137,22 @@ function HomePromoCarousel() {
           ref={scrollerRef}
           className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
         >
-          {promoBanners.map((banner) => (
-            <Link
-              key={banner.id}
-              href={banner.href}
-              className={`shadow-soft flex w-full min-w-full shrink-0 snap-center items-center gap-5 p-5 ${
-                banner.tone === "dark" ? "bg-gray-900 text-white" : "bg-brand-50"
-              }`}
-            >
-              <div className="min-w-0 flex-1">
-                <span
-                  className={`mb-2 inline-block rounded-md px-2 py-0.5 text-[11px] font-bold ${
-                    banner.tone === "dark"
-                      ? "bg-white/15 text-white"
-                      : "bg-white text-brand-500"
-                  }`}
-                >
-                  {banner.badge}
-                </span>
-                <h2
-                  className={`mb-1 text-[17px] font-extrabold leading-snug tracking-tight ${
-                    banner.tone === "dark" ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {banner.title}
-                </h2>
-                <p
-                  className={`text-[12px] font-medium ${
-                    banner.tone === "dark" ? "text-white/60" : "text-gray-400"
-                  }`}
-                >
-                  {banner.desc}
-                </p>
-              </div>
-
-              <div
-                className={`flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full ${
-                  banner.tone === "dark" ? "bg-white/10" : "bg-white/80"
-                }`}
+          {promoBanners.map((banner, i) =>
+            banner.href ? (
+              <Link key={banner.id} href={banner.href} className={PROMO_CARD_CLASS}>
+                <PromoBannerBody banner={banner} priority={i === 0} />
+              </Link>
+            ) : (
+              <button
+                key={banner.id}
+                type="button"
+                onClick={() => setPartnerOpen(true)}
+                className={PROMO_CARD_CLASS}
               >
-                <div className="flex h-9 items-end gap-[3px]">
-                  {[35, 55, 85, 100, 70, 95, 50, 75, 40].map((h, i) => (
-                    <div
-                      key={i}
-                      className={`wave-bar w-[3px] rounded-full ${
-                        banner.tone === "dark" ? "bg-white" : "bg-brand-500"
-                      }`}
-                      style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </Link>
-          ))}
+                <PromoBannerBody banner={banner} priority={i === 0} />
+              </button>
+            ),
+          )}
         </div>
       </div>
 
@@ -171,6 +173,8 @@ function HomePromoCarousel() {
           />
         ))}
       </div>
+
+      <PartnerInquiryModal open={partnerOpen} onClose={() => setPartnerOpen(false)} />
     </section>
   );
 }
@@ -190,21 +194,51 @@ export function HomeView() {
   }));
 
   return (
-    <>
-      <header className="safe-top sticky top-0 z-50 flex items-center justify-between bg-white/80 px-6 pb-4 backdrop-blur-xl">
-        <EumLogo href="/" />
-        <div className="flex gap-4 text-xl text-gray-800">
-          <Link href="/search" aria-label="검색" className="transition-colors hover:text-brand-500">
-            <i className="fa-solid fa-magnifying-glass" />
+    <div className="min-h-dvh bg-white">
+      <header className="safe-top sticky top-0 z-50 flex min-h-14 items-center justify-between bg-white/85 px-5 pb-2 backdrop-blur-xl">
+        <BrandLogo href="/" />
+        <div className="flex h-10 shrink-0 items-center gap-0.5 text-gray-800">
+          <Link
+            href="/search"
+            aria-label="검색"
+            className="inline-flex h-10 w-10 items-center justify-center transition-colors hover:text-brand-500"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
           </Link>
           <Link
             href="/reservation"
             aria-label="알림"
-            className="relative transition-colors hover:text-brand-500"
+            className="relative inline-flex h-10 w-10 items-center justify-center transition-colors hover:text-brand-500"
           >
-            <i className="fa-regular fa-bell" />
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+              <path d="M10 21a2 2 0 0 0 4 0" />
+            </svg>
             {reminders.length > 0 && (
-              <span className="absolute top-0 right-0 h-2 w-2 rounded-full border border-white bg-red-500" />
+              <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-red-500" />
             )}
           </Link>
         </div>
@@ -226,9 +260,9 @@ export function HomeView() {
                 <Link
                   key={r.id}
                   href={r.href}
-                  className="flex items-center gap-3 rounded-[16px] border border-brand-100 bg-brand-50/60 px-4 py-3"
+                  className="shadow-soft flex items-center gap-3 rounded-[18px] bg-gray-50 px-4 py-3.5"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-500 shadow-sm">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-500">
                     <i
                       className={`fa-solid ${
                         r.kind === "feedback" ? "fa-comment-dots" : "fa-calendar-check"
@@ -247,16 +281,20 @@ export function HomeView() {
         )}
 
         <section className="mt-6 px-5">
-          <div className="shadow-soft grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-[24px] border border-gray-100 bg-white">
+          <div className="shadow-soft grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-[24px] bg-gray-50">
             {quickMenu.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex flex-col items-center gap-2.5 px-3 py-5 transition-colors active:bg-surface/60"
+                className="flex flex-col items-center gap-2 px-3 py-5 transition-colors active:bg-gray-100"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-[18px] text-brand-500">
-                  <i className={`fa-solid ${item.icon}`} />
-                </div>
+                <AppImage
+                  src={item.art}
+                  alt=""
+                  width={112}
+                  height={112}
+                  className="h-14 w-14 object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.08)]"
+                />
                 <p className="text-[15px] font-bold text-gray-900">{item.label}</p>
               </Link>
             ))}
@@ -279,7 +317,7 @@ export function HomeView() {
               <Link
                 key={m.id}
                 href={`/masters/${m.id}`}
-                className="shadow-soft flex w-[130px] shrink-0 snap-start cursor-pointer flex-col items-center rounded-[20px] border border-gray-100 bg-white p-4"
+                className="shadow-soft flex w-[130px] shrink-0 snap-start cursor-pointer flex-col items-center rounded-[20px] bg-gray-50 p-4"
               >
                 <div className="relative mb-3 h-16 w-16 overflow-hidden rounded-full">
                   <AppImage
@@ -295,7 +333,7 @@ export function HomeView() {
                 <p className="line-clamp-1 text-center text-[12px] font-medium text-gray-500">
                   {m.tag}
                 </p>
-                <div className="mt-4 w-full rounded-[10px] bg-surface py-1.5 text-center text-[11px] font-bold text-gray-700">
+                <div className="mt-4 w-full rounded-[10px] bg-white py-1.5 text-center text-[11px] font-bold text-gray-700">
                   {m.status}
                 </div>
               </Link>
@@ -309,7 +347,7 @@ export function HomeView() {
           </div>
           <Link
             href={`/academies/${FEATURED_ACADEMY.id}`}
-            className="shadow-soft block cursor-pointer overflow-hidden rounded-[24px] border border-gray-100 bg-white"
+            className="shadow-soft block cursor-pointer overflow-hidden rounded-[24px] bg-gray-50"
           >
             <div className="relative h-[180px] bg-gray-200">
               <AppImage
@@ -334,19 +372,19 @@ export function HomeView() {
               </div>
             </div>
             <div className="flex gap-2 p-4">
-              <span className="rounded-[8px] bg-surface px-3 py-1.5 text-[12px] font-semibold text-gray-600">
+              <span className="rounded-[8px] bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-600">
                 📍 강남역 800m
               </span>
-              <span className="rounded-[8px] bg-surface px-3 py-1.5 text-[12px] font-semibold text-gray-600">
+              <span className="rounded-[8px] bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-600">
                 보컬입시
               </span>
-              <span className="rounded-[8px] bg-surface px-3 py-1.5 text-[12px] font-semibold text-gray-600">
+              <span className="rounded-[8px] bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-600">
                 미디작곡
               </span>
             </div>
           </Link>
         </section>
       </main>
-    </>
+    </div>
   );
 }

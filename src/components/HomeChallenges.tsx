@@ -20,7 +20,7 @@ function MeterRing({ percent }: { percent: number }) {
           cy="36"
           r={r}
           fill="none"
-          stroke="#3182f6"
+          stroke="var(--brand-500)"
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={c}
@@ -64,13 +64,13 @@ export function HomeChallenges() {
       <div className="flex flex-col gap-3">
         <Link
           href="/challenges"
-          className="shadow-soft flex items-center gap-3.5 rounded-[20px] border border-gray-100 bg-white px-4 py-4 transition active:bg-gray-50"
+          className="shadow-soft flex items-center gap-3.5 rounded-[20px] bg-gray-50 px-4 py-4 transition active:bg-gray-100"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-amber-50">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
             <img
               src={MUNGCHI.idle}
               alt=""
-              className="h-10 w-10 object-contain"
+              className="h-11 w-11 object-contain"
             />
           </div>
           <div className="min-w-0 flex-1">
@@ -89,8 +89,8 @@ export function HomeChallenges() {
         {routine && routine.kind === "meter" ? (
           <Link
             href={routine.href}
-            className={`flex items-center justify-between gap-4 rounded-[24px] px-5 py-4 ${
-              routine.completed ? "bg-green-50" : "bg-surface"
+            className={`shadow-soft flex items-center justify-between gap-4 rounded-[24px] px-5 py-4 ${
+              routine.completed ? "bg-green-50" : "bg-gray-50"
             }`}
           >
             <div className="min-w-0">

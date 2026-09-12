@@ -13,7 +13,7 @@ const menuItems = [
     href: "/master/settings/profile",
     icon: "fa-user-pen",
     label: "프로필 수정",
-    desc: "소개 · 태그 · 경력",
+    desc: "소개 · 전문 분야 · 경력",
   },
   {
     href: "/master/settings/pricing",

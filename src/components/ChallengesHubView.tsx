@@ -106,7 +106,7 @@ export function ChallengesHubView() {
       <section className="mt-4 px-5">
         <Link
           href="/vocal-ai"
-          className="relative flex overflow-hidden rounded-[20px] bg-gradient-to-r from-brand-500 to-sky-500 p-4 text-white"
+          className="relative flex overflow-hidden rounded-[20px] bg-gradient-to-r from-brand-600 to-brand-400 p-4 text-white"
         >
           <div className="min-w-0 flex-1 pr-16">
             <p className="text-[11px] font-bold text-white/80">NEW · AI</p>

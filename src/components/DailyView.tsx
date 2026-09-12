@@ -20,6 +20,13 @@ function formatRecordDate(iso: string) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+/** 예전 자동 제목은 날짜라서, 그룹 헤더와 겹친다 */
+function practiceTitle(title: string) {
+  const trimmed = title.trim();
+  if (!trimmed || /^\d{1,2}월\s*\d{1,2}일(\s*연습)?$/.test(trimmed)) return "연습";
+  return trimmed;
+}
+
 /* ── heatmap helpers ───────────────────────────── */
 
 function getMonthGrid(year: number, month: number) {
@@ -122,6 +129,8 @@ export function DailyView() {
 
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
+  /** 달력에서 고른 날. null이면 전체 기록 */
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   /* practice records for this student */
   const practiceRecords = useMemo(
@@ -160,8 +169,12 @@ export function DailyView() {
 
   const totalFeedbackCount = useMemo(
     () =>
-      db.feedbackOrders.filter((o) => matchesStudentScope(studentId, o.studentId))
-        .length,
+      db.feedbackOrders.filter(
+        (o) =>
+          matchesStudentScope(studentId, o.studentId) &&
+          o.status !== "cancelled" &&
+          o.status !== "pending_payment",
+      ).length,
     [db.feedbackOrders, studentId],
   );
 
@@ -241,8 +254,12 @@ export function DailyView() {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayKey = toDateKey(yesterday);
 
+    const visible = selectedKey
+      ? items.filter((item) => toDateKey(new Date(item.record.createdAt)) === selectedKey)
+      : items;
+
     const groups: DateGroup[] = [];
-    for (const item of items) {
+    for (const item of visible) {
       const iso = item.record.createdAt;
       const dateKey = toDateKey(new Date(iso));
       const dateLabel =
@@ -257,7 +274,7 @@ export function DailyView() {
       else groups.push({ dateLabel, dateKey, items: [item] });
     }
     return groups;
-  }, [practiceRecords, db.feedbackOrders, db.masters, studentId]);
+  }, [practiceRecords, db.feedbackOrders, db.masters, studentId, selectedKey]);
 
   /* month nav */
   const prevMonth = () => {
@@ -328,9 +345,12 @@ export function DailyView() {
             <div className="grid grid-cols-7 gap-1">
               {monthGrid.map((day, i) => {
                 if (day === null) return <div key={`e-${i}`} />;
+                const dateKey = toDateKey(new Date(viewYear, viewMonth, day));
+                const todayKey = toDateKey(now);
+                const isFuture = dateKey > todayKey;
+                const isSelected = selectedKey === dateKey;
+                const isToday = dateKey === todayKey;
                 const count = dayCountMap.get(day) ?? 0;
-                const isToday =
-                  isCurrentMonth && day === now.getDate();
                 const intensity =
                   count === 0
                     ? "bg-gray-50"
@@ -341,16 +361,25 @@ export function DailyView() {
                         : "bg-brand-500";
 
                 return (
-                  <div
+                  <button
                     key={day}
+                    type="button"
+                    disabled={isFuture}
+                    aria-pressed={isSelected}
+                    aria-label={`${viewMonth + 1}월 ${day}일`}
+                    onClick={() => setSelectedKey((prev) => (prev === dateKey ? null : dateKey))}
                     className={`flex aspect-square items-center justify-center rounded-lg text-[12px] font-medium transition-colors ${intensity} ${
-                      isToday
+                      isSelected
                         ? "ring-2 ring-brand-500 ring-offset-1"
-                        : ""
-                    } ${count > 0 ? (count >= 3 ? "text-white" : "text-brand-700") : "text-gray-400"}`}
+                        : isToday
+                          ? "ring-1 ring-brand-300"
+                          : ""
+                    } ${
+                      count > 0 ? (count >= 3 ? "text-white" : "text-brand-700") : "text-gray-400"
+                    } ${isFuture ? "cursor-default opacity-40" : "active:scale-95"}`}
                   >
                     {day}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -372,12 +401,15 @@ export function DailyView() {
             </div>
             <div className="text-[11px] font-medium text-gray-400">이번 주</div>
           </div>
-          <div className="shadow-soft rounded-[20px] border border-gray-100 bg-white p-4 text-center">
+          <Link
+            href="/daily/feedback"
+            className="shadow-soft rounded-[20px] border border-gray-100 bg-white p-4 text-center transition active:bg-brand-50"
+          >
             <div className="mb-1 text-[20px] font-extrabold text-gray-900">
               {totalFeedbackCount}
             </div>
             <div className="text-[11px] font-medium text-gray-400">총 피드백 수</div>
-          </div>
+          </Link>
         </section>
 
         {/* ── 오늘 연습 올리기 ── */}
@@ -394,19 +426,36 @@ export function DailyView() {
 
         {/* ── 기록 ── */}
         <section>
-          <h3 className="mb-4 text-[17px] font-bold tracking-tight text-gray-900">기록</h3>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">
+              {selectedKey
+                ? `${new Date(`${selectedKey}T12:00:00`).getMonth() + 1}월 ${new Date(`${selectedKey}T12:00:00`).getDate()}일 기록`
+                : "기록"}
+            </h3>
+            {selectedKey && (
+              <button
+                type="button"
+                onClick={() => setSelectedKey(null)}
+                className="text-[12px] font-medium text-gray-400"
+              >
+                전체보기
+              </button>
+            )}
+          </div>
 
           {groupedTimeline.length === 0 ? (
             <div className="rounded-[20px] border border-gray-100 bg-white p-8 text-center text-[13px] text-gray-400">
-              아직 기록이 없어요
+              {selectedKey ? "이 날 기록이 없어요" : "아직 기록이 없어요"}
             </div>
           ) : (
             <div className="flex flex-col gap-8">
               {groupedTimeline.map((group) => (
                 <div key={group.dateKey}>
-                  <p className="mb-3 text-[12px] font-bold tracking-wide text-gray-400">
-                    {group.dateLabel}
-                  </p>
+                  {!selectedKey && (
+                    <p className="mb-3 text-[12px] font-bold tracking-wide text-gray-400">
+                      {group.dateLabel}
+                    </p>
+                  )}
 
                   <div className="flex flex-col gap-3">
                     {group.items.map(({ record: r, feedback }) => {
@@ -420,7 +469,7 @@ export function DailyView() {
                             <details className="group">
                               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden">
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-[14px] font-bold text-gray-900">{r.title}</p>
+                                  <p className="text-[14px] font-bold text-gray-900">{practiceTitle(r.title)}</p>
                                   {r.memo && (
                                     <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-gray-500">
                                       {r.memo}

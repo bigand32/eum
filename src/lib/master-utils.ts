@@ -19,6 +19,17 @@ export function formatTimeLabel(iso: string) {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+export function formatScheduleWhen(iso: string, now = new Date()) {
+  const d = new Date(iso);
+  const time = formatTimeLabel(iso);
+  if (isSameDay(d, now)) return `오늘 ${time}`;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (isSameDay(d, tomorrow)) return `내일 ${time}`;
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  return `${d.getMonth() + 1}월 ${d.getDate()}일(${days[d.getDay()]}) ${time}`;
+}
+
 export function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&

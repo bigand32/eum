@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "@/lib/brand";
+
 export function getSignupInvitePath() {
   return "/signup";
 }
@@ -9,14 +11,14 @@ export function getSignupInviteUrl(origin: string) {
 
 export function getSignupInviteMessage(origin: string) {
   const url = getSignupInviteUrl(origin);
-  return `[eum] 보컬 코칭 회원가입\n${url}`;
+  return `[${BRAND_NAME}] 보컬 코칭 회원가입\n${url}`;
 }
 
 /** 학생별 추천인 코드 (표시·공유용). 서버 검증은 추후 연동. */
 export function getFriendInviteCode(studentId: string) {
   const raw = studentId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   if (raw.length >= 5) return raw.slice(0, 5);
-  const pad = "EUM01";
+  const pad = "IMU01";
   return (raw + pad).slice(0, 5);
 }
 
@@ -27,7 +29,7 @@ export function getFriendInviteUrl(origin: string, code: string) {
 
 export function getFriendInviteMessage(origin: string, code: string) {
   const url = getFriendInviteUrl(origin, code);
-  return `[eum] 보컬 코칭 초대\n추천인 코드: ${code}\n${url}`;
+  return `[${BRAND_NAME}] 보컬 코칭 초대\n추천인 코드: ${code}\n${url}`;
 }
 
 export async function copyText(text: string) {

@@ -9,7 +9,7 @@ import { useDb } from "@/lib/db/use-db";
 import { useDbReady } from "@/lib/db/db-provider";
 import { getOnboardingPrefs } from "@/lib/onboarding";
 import { SearchListThumb } from "@/components/SearchListThumb";
-import { EumLogo } from "@/components/EumLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { PREMIUM_FEEDBACK_LABEL } from "@/lib/pricing/premium";
 import { PremiumPriceDisplay } from "@/components/PremiumPromoBadge";
 
@@ -25,18 +25,18 @@ const GENRE_FILTERS = [
   },
   {
     id: "kpop",
-    label: "K-POP/아이돌",
-    match: ["팝", "아이돌", "K-POP", "kpop", "케이팝"],
+    label: "K-pop/가요",
+    match: ["K-pop/가요", "가요", "발라드", "POP", "트로트"],
   },
   {
     id: "musical",
     label: "뮤지컬/성악",
-    match: ["뮤지컬", "성악", "입시", "musical"],
+    match: ["뮤지컬", "성악", "CCM"],
   },
   {
     id: "rap",
-    label: "랩/미디",
-    match: ["랩", "힙합", "미디", "rap", "hiphop"],
+    label: "힙합/R&B",
+    match: ["힙합/랩", "힙합", "랩", "R&B/소울", "R&B"],
   },
 ] as const;
 
@@ -159,7 +159,7 @@ export function SearchView() {
     <div className="bg-white">
       <header className="safe-top sticky top-0 z-50 border-b border-gray-100 bg-white/95 px-5 pb-0 backdrop-blur-md">
         <div className="mb-4 flex items-center justify-between">
-          <EumLogo href="/" />
+          <BrandLogo href="/" />
         </div>
 
         <div className="mb-4 flex items-center gap-3">

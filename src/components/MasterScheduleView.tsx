@@ -284,7 +284,7 @@ export function MasterScheduleView() {
                     selected
                       ? "bg-gray-900 text-white"
                       : isToday
-                        ? "bg-indigo-50 text-master-500"
+                        ? "bg-brand-50 text-master-500"
                         : hasAny
                           ? "bg-surface text-gray-800"
                           : "text-gray-400 hover:bg-gray-50"
@@ -295,7 +295,7 @@ export function MasterScheduleView() {
                     <span className="mt-0.5 flex items-center gap-0.5">
                       {marks!.feedback > 0 && (
                         <span
-                          className={`h-1 w-1 rounded-full ${selected ? "bg-indigo-300" : "bg-master-500"}`}
+                          className={`h-1 w-1 rounded-full ${selected ? "bg-brand-300" : "bg-master-500"}`}
                         />
                       )}
                       {marks!.phone > 0 && (
@@ -317,7 +317,7 @@ export function MasterScheduleView() {
 
           <div className="mt-4 flex items-center justify-center gap-5 text-[11px] font-medium text-gray-400">
             <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-800" /> 피드백
+              <span className="h-1.5 w-1.5 rounded-full bg-master-500" /> 피드백
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-teal-700" /> 전화

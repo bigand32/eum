@@ -1,10 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/Providers";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "eum (음) - 보컬 코칭",
-  description: "하이엔드 보컬 코칭 플랫폼",
+  title: `${BRAND_NAME} - 보컬 코칭`,
+  description: BRAND_TAGLINE,
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4401a9",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

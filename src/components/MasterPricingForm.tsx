@@ -128,7 +128,7 @@ function MasterPricingFields({ master }: { master: Master }) {
       </section>
 
       <section>
-        <h2 className="mb-1 px-1 text-[13px] font-bold text-gray-500">전화</h2>
+        <h2 className="mb-1 px-1 text-[13px] font-bold text-gray-500">전화 상담</h2>
         <div className="rounded-2xl border border-gray-100 bg-white px-4 divide-y divide-gray-50">
           <PriceRow
             label="15분"
@@ -152,7 +152,7 @@ function MasterPricingFields({ master }: { master: Master }) {
       </section>
 
       <section>
-        <h2 className="mb-1 px-1 text-[13px] font-bold text-gray-500">방문</h2>
+        <h2 className="mb-1 px-1 text-[13px] font-bold text-gray-500">방문 상담</h2>
         <div className="rounded-2xl border border-gray-100 bg-white px-4 divide-y divide-gray-50">
           <PriceRow
             label="1회 요금"
@@ -186,7 +186,7 @@ function MasterPricingFields({ master }: { master: Master }) {
         disabled={saving}
         onClick={() => void handleSave()}
         className={`w-full rounded-xl py-4 text-[15px] font-bold text-white transition-colors disabled:opacity-60 ${
-          saved ? "bg-green-600" : "bg-master-500 hover:bg-indigo-700"
+          saved ? "bg-green-600" : "bg-master-500 hover:bg-brand-600"
         }`}
       >
         {saved ? "저장됐어요" : saving ? "저장 중..." : "저장하기"}

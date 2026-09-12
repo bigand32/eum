@@ -13,6 +13,11 @@ const SERVICE_GUIDE = [
     desc: "연습 영상·음성을 올리면, 마스터가 타임스탬프 코멘트로 짚어주는 비대면 피드백이에요.",
   },
   {
+    key: "feedback-additional",
+    label: "추가 피드백",
+    desc: "이미 받은 뒤 한 번 더 보낼 때 적용되는 금액이에요.",
+  },
+  {
     key: "phone-15",
     label: "전화 상담 (15분)",
     desc: "짧은 전화로 고민을 바로 물어보는 1:1 실시간 상담이에요. 발성·곡 선택 같은 빠른 체크에 좋아요.",
@@ -50,11 +55,18 @@ export function MasterProductCards({ masterId }: { masterId: string }) {
     },
   ];
 
+  const additionalPrice = pricing.feedbackAdditionalPrice || pricing.feedbackPrice;
+
   const rows = [
     {
       key: "feedback",
       label: PREMIUM_FEEDBACK_LABEL,
       isPremium: true,
+    },
+    {
+      key: "feedback-additional",
+      label: "추가 피드백",
+      price: `${formatPrice(additionalPrice)}원`,
     },
     {
       key: "phone-15",
