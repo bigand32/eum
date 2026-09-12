@@ -25,28 +25,33 @@ export function BottomNav() {
     /^\/masters\/[^/]+$/.test(pathname) ||
     /^\/feedback\//.test(pathname) ||
     /^\/challenges\/[^/]+$/.test(pathname) ||
-    pathname === "/vocal-ai";
+    pathname === "/vocal-ai" ||
+    pathname.startsWith("/contest/");
 
   if (hideNav) return null;
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-[70] flex w-full max-w-[400px] -translate-x-1/2 justify-between border-t border-gray-100 bg-white/90 px-6 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-1/2 z-[70] flex w-full max-w-[400px] -translate-x-1/2 justify-between border-t border-gray-100 bg-white/95 px-6 pt-2.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`relative flex w-12 flex-col items-center gap-1.5 ${
+            className={`relative flex w-12 flex-col items-center gap-1 ${
               active ? "text-brand-500" : "text-gray-400 hover:text-gray-900"
             }`}
           >
-            <i
-              className={`fa-${tab.solid ? "solid" : "regular"} ${tab.icon} text-[20px]`}
-            />
-            {tab.badge && (
-              <span className="absolute top-0 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
-            )}
+            <span className="relative inline-flex h-6 w-6 items-center justify-center">
+              <i
+                className={`fa-${tab.solid ? "solid" : "regular"} ${tab.icon} text-[20px]`}
+              />
+              {tab.badge ? (
+                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-white">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-white" />
+                </span>
+              ) : null}
+            </span>
             <span
               className={`text-[10px] tracking-wide ${active ? "font-bold" : "font-semibold"}`}
             >

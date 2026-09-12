@@ -407,8 +407,8 @@ export function PitchChallengeCard({
           >
             다시 도전
           </button>
-          <Link href="/challenges/long-tone" className="mt-3 block text-[13px] font-bold text-brand-500">
-            호흡 롱톤도 이어서
+          <Link href="/challenges/breath-extend" className="mt-3 block text-[13px] font-bold text-brand-500">
+            호흡 늘리기도 이어서
           </Link>
         </section>
       ) : null}

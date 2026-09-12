@@ -48,47 +48,63 @@ function clampScore(n: number) {
   return Math.max(55, Math.min(96, Math.round(n)));
 }
 
-/** 실제 모델 연동 전: 녹음 메타로 자연스러운 점수 생성 */
-export function generateMockVocalReport(input: {
-  title?: string;
+export type LiveVocalMetrics = {
+  /** 감지된 피치 Hz 샘플 (무음 제외) */
+  pitchHz: number[];
+  /** RMS 샘플 (시간순) */
+  rms: number[];
   durationSec: number;
-  seed?: number;
-}): VocalAiReport {
-  const seed = input.seed ?? Date.now() % 1000;
-  const wobble = (base: number, spread: number) =>
-    clampScore(base + ((seed * 17 + spread * 13) % (spread * 2)) - spread);
+};
 
-  const pitch = wobble(78, 12);
-  const rhythm = wobble(74, 14);
-  const range = wobble(70, 15);
-  const vibrato = wobble(66, 16);
-  const breath = wobble(72, 13);
-  const diction = wobble(76, 12);
+/** 녹음 중 실측값 → 리포트 점수 */
+export function generateVocalReportFromMetrics(input: {
+  title?: string;
+  metrics: LiveVocalMetrics;
+}): VocalAiReport {
+  const { pitchHz, rms, durationSec } = input.metrics;
+  const seed = Math.round(durationSec * 17 + pitchHz.length);
+
+  const pitch = scorePitchStability(pitchHz);
+  const range = scorePitchRange(pitchHz);
+  const breath = scoreBreathSupport(rms);
+  const rhythm = scoreRhythmRough(rms, durationSec);
+  const vibrato = scoreVibratoRough(pitchHz);
+  const diction = clampScore(70 + (seed % 12) - 4); // STT 전엔 추정
   const overall = clampScore(
-    pitch * 0.28 + rhythm * 0.22 + range * 0.15 + vibrato * 0.1 + breath * 0.15 + diction * 0.1,
+    pitch * 0.3 + rhythm * 0.18 + range * 0.15 + vibrato * 0.1 + breath * 0.17 + diction * 0.1,
   );
 
   const rangeLabel =
-    range >= 85 ? "넓은 편 (약 1.5옥타브+)" : range >= 70 ? "평균 (약 1~1.3옥타브)" : "좁은 편 — 스트레칭 추천";
+    range >= 85
+      ? "넓은 편 (약 1.5옥타브+)"
+      : range >= 70
+        ? "평균 (약 1~1.3옥타브)"
+        : "좁은 편 — 스트레칭 추천";
 
   const strengths: string[] = [];
   const improvements: string[] = [];
+  if (pitchHz.length < 8) {
+    improvements.push("목소리가 짧게 잡혔어요. 조금 더 가까이, 또렷하게 불러 보세요");
+  }
   if (pitch >= 80) strengths.push("음정 중심이 비교적 안정적이에요");
   else improvements.push("스케일 연습으로 음정 중심을 잡아보세요");
-  if (rhythm >= 78) strengths.push("박자 감각이 좋아요");
-  else improvements.push("메트로놈 60~80에 맞춰 한 소절만 반복해 보세요");
+  if (rhythm >= 78) strengths.push("소리의 끊김·리듬감이 좋아요");
+  else improvements.push("한 소절을 일정한 크기로 이어 불러 보세요");
   if (breath >= 75) strengths.push("호흡 지지가 느껴져요");
   else improvements.push("프레이즈 앞 복식호흡을 한 번 더 챙기면 좋아요");
-  if (diction >= 78) strengths.push("발음이 또렷한 편이에요");
-  else improvements.push("자음을 살짝 과장해 읽어보면 발음이 살아나요");
+  if (range >= 80) strengths.push("음역을 넓게 쓰고 있어요");
+  else if (range < 70) improvements.push("워밍업 스케일로 음역을 살짝 열어보세요");
   if (vibrato < 70) improvements.push("바이브는 의도적으로 넣기보다, 먼저 곧은 음을 유지해 보세요");
   else strengths.push("자연스러운 바이브 흔들림이 있어요");
+
+  while (strengths.length < 1) strengths.push("오늘도 연습한 것 자체가 좋아요");
+  while (improvements.length < 1) improvements.push("짧은 구간만 반복해도 금방 올라가요");
 
   return {
     id: `vai_${Date.now()}`,
     createdAt: new Date().toISOString(),
     title: input.title?.trim() || "내 보컬 분석",
-    durationSec: input.durationSec,
+    durationSec,
     scores: { overall, pitch, rhythm, range, vibrato, breath, diction },
     rangeLabel,
     summary:
@@ -100,12 +116,104 @@ export function generateMockVocalReport(input: {
     strengths: strengths.slice(0, 3),
     improvements: improvements.slice(0, 3),
     proTips: [
-      "바이브 주기: 평균보다 약간 빠른 편 → 곧은 음을 2초 유지한 뒤 넣으면 컨트롤이 쉬워져요.",
-      "호흡: 프레이즈 끝에서 압이 떨어지는 구간이 있어요. S 연장 호흡 루틴을 추천합니다.",
-      "발음: /ㅅ/, /ㅈ/ 마찰음이 뭉개지는 타이밍이 있습니다. 가사만 리듬 읽기 1회 추가해 보세요.",
+      "바이브 주기: 곧은 음을 2초 유지한 뒤 넣으면 컨트롤이 쉬워져요.",
+      "호흡: 프레이즈 끝에서 압이 떨어지는 구간이 있으면 S 연장 호흡 루틴을 추천해요.",
+      "아이폰은 스피커·잡음에 민감해요. 조용한 곳·유선 이어폰 마이크가 더 안정적이에요.",
       "히스토리: 같은 곡을 주 2회 올리면 음정 편차 추이를 그래프로 보여드릴 수 있어요.",
     ],
   };
+}
+
+function scorePitchStability(hz: number[]) {
+  if (hz.length < 5) return 62;
+  // 인접 프레임 센트 편차 평균
+  let sum = 0;
+  let n = 0;
+  for (let i = 1; i < hz.length; i++) {
+    const cents = 1200 * Math.log2(hz[i] / hz[i - 1]);
+    if (Math.abs(cents) < 400) {
+      sum += Math.abs(cents);
+      n++;
+    }
+  }
+  if (!n) return 65;
+  const avg = sum / n;
+  // 작을수록 안정 → 높은 점수
+  return clampScore(96 - avg * 1.1);
+}
+
+function scorePitchRange(hz: number[]) {
+  if (hz.length < 5) return 60;
+  const min = Math.min(...hz);
+  const max = Math.max(...hz);
+  const semis = 12 * Math.log2(max / min);
+  if (semis >= 18) return clampScore(90);
+  if (semis >= 12) return clampScore(82);
+  if (semis >= 7) return clampScore(72);
+  return clampScore(62 + semis * 1.2);
+}
+
+function scoreBreathSupport(rms: number[]) {
+  if (rms.length < 8) return 64;
+  const voiced = rms.filter((v) => v > 0.015);
+  if (voiced.length < 5) return 60;
+  const mean = voiced.reduce((a, b) => a + b, 0) / voiced.length;
+  let varSum = 0;
+  for (const v of voiced) varSum += (v - mean) ** 2;
+  const std = Math.sqrt(varSum / voiced.length);
+  const cv = std / Math.max(mean, 1e-6);
+  // 너무 작아도(거의 안 들림)·너무 흔들려도 감점
+  const level = Math.min(1, mean / 0.08);
+  return clampScore(58 + level * 28 - cv * 40);
+}
+
+function scoreRhythmRough(rms: number[], durationSec: number) {
+  if (rms.length < 10 || durationSec < 3) return 66;
+  // RMS onset 간격의 규칙성
+  const thr = 0.03;
+  const onsets: number[] = [];
+  for (let i = 1; i < rms.length; i++) {
+    if (rms[i] > thr && rms[i - 1] <= thr) onsets.push(i);
+  }
+  if (onsets.length < 3) return 70;
+  const gaps: number[] = [];
+  for (let i = 1; i < onsets.length; i++) gaps.push(onsets[i] - onsets[i - 1]);
+  const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  let varSum = 0;
+  for (const g of gaps) varSum += (g - mean) ** 2;
+  const cv = Math.sqrt(varSum / gaps.length) / Math.max(mean, 1);
+  return clampScore(92 - cv * 55);
+}
+
+function scoreVibratoRough(hz: number[]) {
+  if (hz.length < 12) return 65;
+  // 짧은 주기 흔들림 존재 여부
+  let flips = 0;
+  for (let i = 2; i < hz.length; i++) {
+    const d1 = hz[i - 1] - hz[i - 2];
+    const d2 = hz[i] - hz[i - 1];
+    if (d1 * d2 < 0 && Math.abs(d1) + Math.abs(d2) > 0.5) flips++;
+  }
+  const rate = flips / hz.length;
+  if (rate > 0.08 && rate < 0.35) return clampScore(78 + rate * 40);
+  if (rate >= 0.35) return clampScore(70);
+  return clampScore(64);
+}
+
+/** 실제 모델 연동 전: 녹음 메타로 자연스러운 점수 생성 */
+export function generateMockVocalReport(input: {
+  title?: string;
+  durationSec: number;
+  seed?: number;
+}): VocalAiReport {
+  return generateVocalReportFromMetrics({
+    title: input.title,
+    metrics: {
+      durationSec: input.durationSec,
+      pitchHz: [],
+      rms: Array.from({ length: 20 }, (_, i) => 0.04 + ((input.seed ?? 1) % 7) * 0.002 + (i % 3) * 0.01),
+    },
+  });
 }
 
 const PRO_KEY = "eum-vocal-ai-pro";

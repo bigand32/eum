@@ -308,8 +308,13 @@ export function DailyView() {
   return (
     <>
       {/* header */}
-      <header className="safe-top sticky top-0 z-50 border-b border-gray-50 bg-white/90 px-6 pb-4 backdrop-blur-xl">
-        <div className="text-xl font-extrabold tracking-tight text-gray-900">연습일지</div>
+      <header className="safe-top sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-gray-50 bg-white/90 px-5 pb-4 backdrop-blur-xl">
+        <div className="text-[22px] font-extrabold tracking-tight text-gray-900">연습일지</div>
+        <RecordModal
+          triggerAriaLabel="연습 올리기"
+          triggerLabel={<i className="fa-solid fa-plus text-[15px]" />}
+          triggerClassName="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition active:opacity-90"
+        />
       </header>
 
       <main className="flex flex-col px-5 pt-5 pb-28">
@@ -412,27 +417,12 @@ export function DailyView() {
           </Link>
         </section>
 
-        {/* ── 오늘 연습 올리기 ── */}
-        <section className="mb-8">
-          <div className="shadow-soft flex flex-col items-center rounded-[24px] border border-gray-100 bg-white p-6 text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-[22px] text-brand-500">
-              <i className="fa-solid fa-video" />
-            </div>
-            <h4 className="mb-1 text-[15px] font-bold text-gray-900">오늘 연습 기록하기</h4>
-            <p className="mb-4 text-[12px] text-gray-500">영상을 올리고 메모를 남겨보세요</p>
-            <RecordModal />
-          </div>
-        </section>
-
-        {/* ── 기록 ── */}
         <section>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-[17px] font-bold tracking-tight text-gray-900">
-              {selectedKey
-                ? `${new Date(`${selectedKey}T12:00:00`).getMonth() + 1}월 ${new Date(`${selectedKey}T12:00:00`).getDate()}일 기록`
-                : "기록"}
-            </h3>
-            {selectedKey && (
+          {selectedKey ? (
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-[17px] font-bold tracking-tight text-gray-900">
+                {`${new Date(`${selectedKey}T12:00:00`).getMonth() + 1}월 ${new Date(`${selectedKey}T12:00:00`).getDate()}일`}
+              </h3>
               <button
                 type="button"
                 onClick={() => setSelectedKey(null)}
@@ -440,12 +430,12 @@ export function DailyView() {
               >
                 전체보기
               </button>
-            )}
-          </div>
+            </div>
+          ) : null}
 
           {groupedTimeline.length === 0 ? (
             <div className="rounded-[20px] border border-gray-100 bg-white p-8 text-center text-[13px] text-gray-400">
-              {selectedKey ? "이 날 기록이 없어요" : "아직 기록이 없어요"}
+              {selectedKey ? "이 날 올린 연습이 없어요" : "아직 올린 연습이 없어요"}
             </div>
           ) : (
             <div className="flex flex-col gap-8">

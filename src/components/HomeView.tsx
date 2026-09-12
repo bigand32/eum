@@ -9,12 +9,19 @@ import { FEATURED_ACADEMY } from "@/lib/db/academies";
 import { useDb } from "@/lib/db/use-db";
 import { useStudentId } from "@/lib/auth/use-student-id";
 import { getStudentReminders } from "@/lib/reminders";
-import { HomeChallenges } from "@/components/HomeChallenges";
 
-const quickMenu = [
+type QuickMenuItem = {
+  art: string;
+  label: string;
+  href: string;
+};
+
+const quickMenu: QuickMenuItem[] = [
   { art: "/brand/icons/feedback-v3.png", label: "피드백", href: "/search" },
   { art: "/brand/icons/journal-v3.png", label: "연습일지", href: "/daily" },
-] as const;
+  { art: "/brand/icons/challenge-v4.png", label: "챌린지", href: "/challenges" },
+  { art: "/brand/icons/contest-v4.png", label: "콘테스트", href: "/contest" },
+];
 
 type PromoBanner = {
   id: string;
@@ -281,27 +288,25 @@ export function HomeView() {
         )}
 
         <section className="mt-6 px-5">
-          <div className="shadow-soft grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-[24px] bg-gray-50">
+          <div className="shadow-soft grid grid-cols-4 overflow-hidden rounded-[24px] bg-gray-50">
             {quickMenu.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex flex-col items-center gap-2 px-3 py-5 transition-colors active:bg-gray-100"
+                className="flex flex-col items-center gap-1.5 px-1 py-4 transition-colors active:bg-gray-100"
               >
                 <AppImage
                   src={item.art}
                   alt=""
                   width={112}
                   height={112}
-                  className="h-14 w-14 object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.08)]"
+                  className="h-12 w-12 object-contain"
                 />
-                <p className="text-[15px] font-bold text-gray-900">{item.label}</p>
+                <p className="text-[12px] font-bold text-gray-900">{item.label}</p>
               </Link>
             ))}
           </div>
         </section>
-
-        <HomeChallenges />
 
         <section className="mt-12 pl-5">
           <div className="mb-4 flex items-center justify-between pr-5">

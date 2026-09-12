@@ -18,13 +18,14 @@ export function StudentLayoutClient({ children }: { children: React.ReactNode })
     isFeedbackDetail ||
     pathname === "/onboarding" ||
     /^\/challenges\/[^/]+$/.test(pathname) ||
-    pathname === "/vocal-ai";
+    pathname === "/vocal-ai" ||
+    pathname.startsWith("/contest/");
 
   return (
     <AuthGuard roles={isMasterDetail ? ["student", "master"] : ["student"]}>
       <DbLoadingOverlay />
       <OnboardingRedirect />
-      <AppFrame className={hideNav ? "pb-0" : "pb-28"}>
+      <AppFrame className={hideNav ? "pb-0" : "pb-20"}>
         {children}
         {!hideNav && <BottomNav />}
       </AppFrame>
